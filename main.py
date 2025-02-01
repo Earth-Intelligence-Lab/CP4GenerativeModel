@@ -16,7 +16,7 @@ def run(args):
     dataset_name = args.dataset
     print(f'data: {dataset_name}')
 
-    X, Y = get_dataset(dataset_name, base_dataset_path=None)
+    X, Y = get_dataset(dataset_name, base_path=None)
     N = X.shape[0]
 
     train, calib, test = np.split(range(N), [int(.6 * N), int(.8 * N), ])

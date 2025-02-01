@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import numpy as np
 
 class GaussianPath:
     def __init__(self, alpha_fn, beta_fn):
@@ -94,7 +95,7 @@ def train_flow_matching(model, gaussian_path, dataloader, optimizer, num_epochs,
 
             Loss += loss.item()
 
-        print(f"Epoch {epoch + 1}, Loss: {Loss/len(train):.4f}")
+        print(f"Epoch {epoch + 1}, Loss: {Loss:.4f}")
 
 
 def generate_data(model, gaussian_path, condition, timesteps, device):

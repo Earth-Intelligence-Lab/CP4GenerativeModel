@@ -51,11 +51,12 @@ def run(args):
     # Sample Generative Model
     calib_samples, calib_conditions = generate_samples_for_dataset(model, gaussian_path, calib_loader, args.n_samples, args.timesteps, args.device)
     test_samples, test_conditions = generate_samples_for_dataset(model, gaussian_path, test_loader, args.n_samples, args.timesteps, args.device)
+    # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
 
     # Validate Results
     plt.scatter(
-        calib_conditions,
-        calib_samples,
+        np.vstack(calib_conditions),
+        np.vstack(calib_samples),
         alpha=0.2, s=3, label='Random Samples', color='red'
     )
 
@@ -66,8 +67,6 @@ def run(args):
     )
 
     plt.legend(loc='upper right')
-
-
 
 
 if __name__ == '__main__':

@@ -127,6 +127,6 @@ def generate_samples_for_dataset(model, gaussian_path, data_loader, num_samples,
             conditions.append(condition.cpu().numpy())
 
     # Convert lists to arrays for easier handling
-    all_generated_samples = np.vstack(all_generated_samples)
-    conditions = np.vstack(conditions)
+    all_generated_samples = np.array(all_generated_samples)
+    conditions = np.array(conditions)
     return all_generated_samples, conditions

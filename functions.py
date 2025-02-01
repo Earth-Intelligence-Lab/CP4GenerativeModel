@@ -12,12 +12,12 @@ def score_fun(ens, k_hat, eps=1e-6):
     d = ens.shape[1]
     ys, y_hat = ens[:-1, :], ens[[-1], :]
 
-    if len(ys) != k_hat:
+    if len(ys) != k_hat: # number of clusters less than number of ensemble members
       kmeans = KMeans(n_clusters=k_hat, random_state=0).fit(ys)
       means = kmeans.cluster_centers_
       weights = [np.mean(kmeans.labels_ == i) for i in range(k_hat)]
       covariances = [np.cov(ys[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(ys) > 1 else eps * np.eye(d) for i in range(k_hat)]
-    else:
+    else: # every ensemble member is a cluster
       means = ys
       weights = [1/len(ys) for i in range(len(ys))]
       covariances = [eps * np.eye(d) for i in range(len(ys))]
@@ -90,8 +90,8 @@ def inference(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100, buffle=3):
 def summary_inference(data, k_hat, qt, grid_res=200, buffle=3):
 
     # data: (N_test, N_ens, d)
-    # k_hat: scalar
-    # qt: scalar
+    # k_hat: scalar, number of clusters in k-NN
+    # qt: scalar, quantile corresponding to the coverage rate
 
     scores = []
     volumes = []

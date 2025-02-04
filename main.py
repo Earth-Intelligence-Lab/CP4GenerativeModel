@@ -7,12 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from dataset import *
+from functions import *
 from flow_matching import *
 from torch.utils.data import DataLoader
 
 
 def run(args):
-
+    #=========prepare data============
     dataset_name = args.dataset
     print(f'data: {dataset_name}')
 
@@ -54,6 +55,7 @@ def run(args):
     # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
 
     # Validate Results
+    """
     plt.scatter(
         np.vstack(calib_conditions),
         np.vstack(calib_samples),
@@ -67,8 +69,27 @@ def run(args):
     )
 
     plt.legend(loc='upper right')
+    """
 
+    #=========conformal prediction============
+    Y_calib, Y_hat_calib, Y_test, Y_hat_test = calib_samples, Y_calib, test_samples, Y_test
 
+    print(f'Y_calib shape: {Y_calib.shape}')
+    print(f'Y_hat_calib shape: {Y_hat_calib.shape}')
+    calib_scores = summary_score(Y_calib, Y_hat_calib, k_hat=args.k_hat)
+    qt = np.quantile(calib_scores, args.coverage)
+
+    
+    #Validate on test set: get coverage and average volume
+    k_hat = 3
+    test_scores, test_volumes = summary_inference(Y_test, Y_hat_test, k_hat=args.k_hat, qt=qt, grid_res=200, buffle=3)
+
+    #Calculate statistics and save results
+    print(f'k_hat: {args.k_hat}')
+    print(f'Test Coverage Rate: {np.mean(test_scores < qt):.2f}')
+    print(f'Average Volume: {np.mean(test_volumes):.2f}')
+
+    
 if __name__ == '__main__':
     # Input arguments
     parser = argparse.ArgumentParser()
@@ -80,8 +101,9 @@ if __name__ == '__main__':
     parser.add_argument('--timesteps', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     # PCP parameters
-    parser.add_argument('--n_samples', type=int, default=10)
-
+    parser.add_argument('--n_samples', type=int, default=50)
+    parser.add_argument('--coverage', type=float, default=0.9)
+    parser.add_argument('--k_hat', type=int, default=3)
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 

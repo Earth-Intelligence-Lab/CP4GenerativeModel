@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import random
 import argparse
 
 import numpy as np
@@ -13,10 +14,20 @@ from torch.utils.data import DataLoader
 
 def run(args):
 
+    # Set random seed
+    random_state = args.seed
+    random.seed(random_state)
+    np.random.seed(random_state)
+    torch.manual_seed(random_state)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(random_state)
+
+    # Get data set
+    base_dataset_path = './data/'
     dataset_name = args.dataset
     print(f'data: {dataset_name}')
 
-    X, Y = get_dataset(dataset_name, base_path=None)
+    X, Y = get_dataset(dataset_name, base_path=base_dataset_path)
     N = X.shape[0]
 
     train, calib, test = np.split(range(N), [int(.6 * N), int(.8 * N), ])
@@ -72,6 +83,7 @@ def run(args):
 if __name__ == '__main__':
     # Input arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', default=100, type=int)
     parser.add_argument('--dataset', default='s_curve', type=str)  # dataset name
     # Training parameters
     parser.add_argument('--n_epochs', type=int, default=20000)

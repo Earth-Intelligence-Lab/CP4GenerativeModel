@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from dataset import *
 from flow_matching import *
 from torch.utils.data import DataLoader
-
+from sklearn.preprocessing import StandardScaler
 
 def run(args):
 
@@ -25,18 +25,29 @@ def run(args):
     # Get data set
     base_dataset_path = './data/'
     dataset_name = args.dataset
-    print(f'data: {dataset_name}')
+    print(f'data: {dataset_name}', flush=True)
 
     X, Y = get_dataset(dataset_name, base_path=base_dataset_path)
     N = X.shape[0]
 
     train, calib, test = np.split(range(N), [int(.6 * N), int(.8 * N), ])
-    print(f'train size: {len(train)}, calib size: {len(calib)}, test size: {len(test)}')
+    print(f'train size: {len(train)}, calib size: {len(calib)}, test size: {len(test)}', flush=True)
 
     # Extract train, calib, and test subsets
     X_train, Y_train = X[train], Y[train]
     X_calib, Y_calib = X[calib], Y[calib]
     X_test, Y_test = X[test], Y[test]
+
+    # Standardize the data
+    x_scaler = StandardScaler()
+    X_train = x_scaler.fit_transform(X_train)
+    X_calib = x_scaler.transform(X_calib)
+    X_test = x_scaler.transform(X_test)
+
+    y_scaler = StandardScaler()
+    Y_train = y_scaler.fit_transform(Y_train)
+    Y_calib = y_scaler.transform(Y_calib)
+    Y_test = y_scaler.transform(Y_test)
 
     # Create Dataset objects
     train_dataset = DatasetTensor(X_train, Y_train)
@@ -62,6 +73,13 @@ def run(args):
     # Sample Generative Model
     calib_samples, calib_conditions = generate_samples_for_dataset(model, gaussian_path, calib_loader, args.n_samples, args.timesteps, args.device)
     test_samples, test_conditions = generate_samples_for_dataset(model, gaussian_path, test_loader, args.n_samples, args.timesteps, args.device)
+    # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
+    
+    # Denormalize the samples and conditions
+    calib_samples = y_scaler.inverse_transform(calib_samples.reshape(-1, calib_samples.shape[-1])).reshape(calib_samples.shape)
+    calib_conditions = x_scaler.inverse_transform(calib_conditions.reshape(-1, calib_conditions.shape[-1])).reshape(calib_conditions.shape)
+    test_samples = y_scaler.inverse_transform(test_samples.reshape(-1, test_samples.shape[-1])).reshape(test_samples.shape)
+    test_conditions = x_scaler.inverse_transform(test_conditions.reshape(-1, test_conditions.shape[-1])).reshape(test_conditions.shape)
     # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
 
     # Validate Results

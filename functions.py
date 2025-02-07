@@ -5,13 +5,12 @@ from sklearn.cluster import KMeans
 from matplotlib.patches import Ellipse
 from scipy.stats import multivariate_normal
 
-def score_fun(ens, k_hat, eps=1e-6):
+def score_fun(ys, y_hat, k_hat, eps=1e-6):
 
-    # ens: (N_ens, d)
-    # k_hat: scalar
-    d = ens.shape[1]
-    ys, y_hat = ens[:-1, :], ens[[-1], :]
+    # ys: (N_ens, d);  y_hat: (d,)
+    # k_hat: scalar, number of clusters in k-NN
 
+    d = ys.shape[1]
     if len(ys) != k_hat: # number of clusters less than number of ensemble members
       kmeans = KMeans(n_clusters=k_hat, random_state=0).fit(ys)
       means = kmeans.cluster_centers_
@@ -19,7 +18,7 @@ def score_fun(ens, k_hat, eps=1e-6):
       covariances = [np.cov(ys[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(ys) > 1 else eps * np.eye(d) for i in range(k_hat)]
     else: # every ensemble member is a cluster
       means = ys
-      weights = [1/len(ys) for i in range(len(ys))]
+      weights = [1/len(ys)] * len(ys)
       covariances = [eps * np.eye(d) for i in range(len(ys))]
 
     #print(covariances)
@@ -32,24 +31,22 @@ def score_fun(ens, k_hat, eps=1e-6):
 
     return min(distances)
 
-
-def summary_score(data, k_hat):
-
+def summary_score(data_ys, data_y_hat, k_hat):
     # data: (N_train, N_ens, d)
     # k_hat: scalar
 
     scores = []
-    for ens in tqdm(data):
-        s = score_fun(ens, k_hat)
+    for idx, (ys, y_hat) in enumerate(zip(data_ys, data_y_hat)):
+        s = score_fun(ys, y_hat, k_hat)
         scores.append(s)
     return scores
 
 
-# given k generated data, find prediction set with 1-alpha% percent coverage rate on average
+# given k generated data, find prediction set with 1-alpha percent coverage rate on average
 def inference(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100, buffle=3):
 
     # ys: (N_ens, d)
-    # y_hat: (1, d)
+    # y_hat: (d,)
     # k_hat: scalar
     # qt: scalar
 
@@ -66,28 +63,48 @@ def inference(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100, buffle=3):
       covariances = [eps * np.eye(d) for i in range(len(ys))]
 
     # Gaussian KDE prediction sets
-    x, y = np.meshgrid(np.linspace(np.min(ys[:,0])-buffle, np.max(ys[:,0])+buffle, grid_res), np.linspace(np.min(ys[:,1])-buffle, np.max(ys[:,1])+buffle, grid_res))
-    pos = np.dstack((x, y))
-    dens = np.zeros((k_hat, x.shape[0], x.shape[1]), float)
+    if d == 2:
+        x, y = np.meshgrid(np.linspace(np.min(ys[:,0])-buffle, np.max(ys[:,0])+buffle, grid_res), np.linspace(np.min(ys[:,1])-buffle, np.max(ys[:,1])+buffle, grid_res))
+        pos = np.dstack((x, y))
+        dens = np.zeros((k_hat, x.shape[0], x.shape[1]), float)
 
-    for i in range(k_hat):
-        dens[i] = - (multivariate_normal.logpdf(pos, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
-    dens = np.min(dens, axis=0)
+        for i in range(k_hat):
+            dens[i] = - (multivariate_normal.logpdf(pos, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
+        dens = np.min(dens, axis=0)
 
-    dens[dens < qt] = 0
-    dens[dens >= qt] = 1
+        dens[dens < qt] = 0
+        dens[dens >= qt] = 1
 
-    # compute score
-    scores = []
-    for i in range(k_hat):
-        score = - (multivariate_normal.logpdf(y_hat, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
-        scores.append(score)
+        # compute score
+        scores = []
+        for i in range(k_hat):
+            score = - (multivariate_normal.logpdf(y_hat, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
+            scores.append(score)
 
-    return min(scores), dens, x, y
+        volume = (x.shape[0] * x.shape[1] - np.sum(dens)) * (x[0,1] - x[0,0]) * (y[1,0] - y[0,0])
+
+    elif d == 1:
+        x = np.linspace(np.min(ys[:,0])-buffle, np.max(ys[:,0])+buffle, grid_res)
+        dens = np.zeros((k_hat, x.shape[0]), float)
+        for i in range(k_hat):
+            dens[i] = - (multivariate_normal.logpdf(x, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
+        dens = np.min(dens, axis=0) # min over k_hat----we could also take the summation
+
+        dens[dens < qt] = 0
+        dens[dens >= qt] = 1
+
+        # compute score
+        scores = []
+        for i in range(k_hat):
+            score = - (multivariate_normal.logpdf(y_hat, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
+            scores.append(score)
+
+        volume = (x.shape[0] - np.sum(dens)) * (x[1] - x[0])
+    return min(scores), dens, volume
 
 
 
-def summary_inference(data, k_hat, qt, grid_res=200, buffle=3):
+def summary_inference(data_ys, data_y_hat, k_hat, qt, grid_res=200, buffle=3):
 
     # data: (N_test, N_ens, d)
     # k_hat: scalar, number of clusters in k-NN
@@ -96,9 +113,8 @@ def summary_inference(data, k_hat, qt, grid_res=200, buffle=3):
     scores = []
     volumes = []
 
-    for ens in tqdm(data):
-        score, dens, x, y = inference(ys=ens[:-1, :], y_hat=ens[[-1], :], k_hat=k_hat, qt=qt, grid_res=grid_res, buffle=buffle)
-        volume = (x.shape[0] * x.shape[1] - np.sum(dens)) * (x[0,1] - x[0,0]) * (y[1,0] - y[0,0])
+    for idx, (ys, y_hat) in enumerate(zip(data_ys, data_y_hat)):
+        score, dens, volume = inference(ys, y_hat, k_hat=k_hat, qt=qt, grid_res=grid_res, buffle=buffle)
 
         scores.append(score)
         volumes.append(volume)

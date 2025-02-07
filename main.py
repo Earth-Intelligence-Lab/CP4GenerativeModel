@@ -8,12 +8,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from dataset import *
+from functions import *
 from flow_matching import *
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 def run(args):
-
+  
     # Set random seed
     random_state = args.seed
     random.seed(random_state)
@@ -96,6 +97,7 @@ def run(args):
 
 '''
     # Validate Results
+    """
     plt.scatter(
         np.vstack(calib_conditions),
         np.vstack(calib_samples),
@@ -111,7 +113,12 @@ def run(args):
     plt.legend(loc='upper right')
     plt.savefig(os.path.join(args.output_saving_path, 'results_validation.png'))
 '''
+    #Calculate statistics and save results
+    print(f'k_hat: {args.k_hat}')
+    print(f'Test Coverage Rate: {np.mean(test_scores < qt):.2f}')
+    print(f'Average Volume: {np.mean(test_volumes):.2f}')
 
+    
 if __name__ == '__main__':
     # Input arguments
     parser = argparse.ArgumentParser()
@@ -126,8 +133,9 @@ if __name__ == '__main__':
     parser.add_argument('--timesteps', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     # PCP parameters
-    parser.add_argument('--n_samples', type=int, default=10)
-
+    parser.add_argument('--n_samples', type=int, default=50)
+    parser.add_argument('--coverage', type=float, default=0.9)
+    parser.add_argument('--k_hat', type=int, default=3)
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 

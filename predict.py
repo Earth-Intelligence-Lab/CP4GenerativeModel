@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 """ Load dataset methods """
 
 """ Load generative model methods """
-from functions import summary_score, summary_inference
+from CP4GenerativeModel.KMeans import summary_score, summary_inference
 
 
 def main(args):

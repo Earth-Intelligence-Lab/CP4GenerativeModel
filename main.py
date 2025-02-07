@@ -1,5 +1,6 @@
 import os
 import sys
+from tqdm import tqdm
 import torch
 import random
 import argparse
@@ -7,8 +8,9 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
+import PCP
+import KMeans
 from dataset import *
-from functions import *
 from flow_matching import *
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
@@ -95,30 +97,74 @@ def run(args):
     np.save(os.path.join(args.output_saving_path, 'Y_calib.npy'), Y_calib)
     np.save(os.path.join(args.output_saving_path, 'Y_test.npy'), Y_test)
 
-'''
-    # Validate Results
-    """
-    plt.scatter(
-        np.vstack(calib_conditions),
-        np.vstack(calib_samples),
-        alpha=0.2, s=3, label='Random Samples', color='red'
-    )
 
-    plt.scatter(
-        x_scaler.inverse_transform(X_calib),
-        y_scaler.inverse_transform(Y_calib),
-        alpha=0.5, s=10, label='Truth', color='blue'
-    )
-
-    plt.legend(loc='upper right')
-    plt.savefig(os.path.join(args.output_saving_path, 'results_validation.png'))
-'''
     #Calculate statistics and save results
-    print(f'k_hat: {args.k_hat}')
-    print(f'Test Coverage Rate: {np.mean(test_scores < qt):.2f}')
-    print(f'Average Volume: {np.mean(test_volumes):.2f}')
+    Y_ens_calib, Y_calib, Y_ens_test, Y_test = calib_samples, Y_calib, test_samples, Y_test
+    print(f'Y_ens_calib shape: {Y_ens_calib.shape}', flush=True)
+    print(f'Y_calib shape: {Y_calib.shape}', flush=True)
+    print(f'Y_ens_test shape: {Y_ens_test.shape}', flush=True)
+    print(f'Y_test shape: {Y_test.shape}', flush=True)
+
+
+    k_hat_list = [1,2,3,4,5]
+    qt_list = []
+    coverage_list = []
+    volume_list = []
+    for i in tqdm(range(len(k_hat_list))):
+        k_hat = k_hat_list[i]
+        calib_scores = KMeans.summary_score_KMeans(Y_ens_calib, Y_calib, k_hat=k_hat)
+        qt = np.quantile(calib_scores, args.coverage) 
+        test_scores, test_volumes = KMeans.summary_inference_KMeans(Y_ens_test, Y_test, k_hat=k_hat, qt=qt)
+
+        #Calculate statistics and save results
+        print(f'k_hat: {k_hat}')
+        print(f'Test Coverage Rate: {np.mean(test_scores < qt):.2f}')
+        print(f'Average Volume: {np.mean(test_volumes):.2f}')
+        qt_list.append(qt)
+        coverage_list.append(np.mean(test_scores < qt))
+        volume_list.append(np.mean(test_volumes))
+
+    # pcp
+    Y_hat = np.concatenate((Y_ens_calib, Y_ens_test), axis=0)
+    Y_cal_test = np.concatenate((Y_calib, Y_test), axis=0).reshape(-1,1,Y_ens_calib.shape[2])
+    print(f'Y_hat shape: {Y_hat.shape}')
+    print(f'Y_cal_test shape: {Y_cal_test.shape}')
+
+    # Ranking the samples by their average m-nearest neighbor distances, here we pick m=4.
+    # Compute pairwise distances between Y and Y_hat_ranked. Each row is a non-conformity score vector.
+    pcp_vcr = PCP.PCP_VCR(n_sample_K = args.n_samples,alpha=0.1,y_dim = Y_ens_calib.shape[2])
+    Y_hat_ranked = pcp_vcr.rank(Y_cal_test,Y_hat,k_neighbor = 4)
+    dist_matrix = pcp_vcr.compute_dist_matrix(Y_cal_test,Y_hat)
+    dist_matrix_rank = pcp_vcr.compute_dist_matrix(Y_cal_test,Y_hat_ranked)
+
+
+    # Approximate algorithm on calibration data: initialize different entries in range(n_sample), and select the approximated solution with the best approximated efficiency (sum of prediction regions, no consideration of overlap).
+    E_q_list = []
+    radius_list = []
+    for pos in tqdm(range(args.n_samples)):
+        E_q = pcp_vcr.calibrate(dist_matrix_rank[:len(calib),:],num_iter = 300,position=pos)
+        radius = np.sum(E_q ** pcp_vcr.y_dim)
+        E_q_list.append(E_q)
+        radius_list.append(radius)
 
     
+    # Compute the empirical coverage and exact empirical efficiency (with consideration of overlap) on testing data.  
+    # get_coverage_length_overlap function is used to compute the exact efficiency of the coverage set, but this is only computable in 1-dim data. For higher dimensions, there is no analytical solution other than Monte Carlo. 
+    pcp_vcr_radius = E_q_list[np.argmin(radius_list)]
+    emp_coverage = pcp_vcr.empirical_coverage(dist_matrix_rank[len(calib):,:],pcp_vcr_radius)
+    print(f"PCP-VCR empirical coverage: {emp_coverage:.3f}")
+    rank_pcp_exact_length = PCP.get_coverage_length_overlap(pcp_vcr_radius,Y_hat_ranked[len(calib):])
+    print(f"PCP-VCR empirical efficiency: {np.mean(rank_pcp_exact_length):.3f}")
+
+    # Compare with results of PCP.  
+    pcp_radius = pcp_vcr.pcp_radius(dist_matrix[:len(calib)])
+    pcp_coverage = pcp_vcr.empirical_coverage(dist_matrix[len(calib):],pcp_radius)
+    pcp_exact_length = PCP.get_coverage_length_overlap(pcp_radius,Y_hat[len(calib):])
+    print(f"PCP empirical coverage: {pcp_coverage:.3f}")
+    print(f"PCP empirical efficiency: {np.mean(pcp_exact_length):.3f}")
+
+    return
+
 if __name__ == '__main__':
     # Input arguments
     parser = argparse.ArgumentParser()

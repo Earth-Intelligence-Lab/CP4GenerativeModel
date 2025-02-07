@@ -82,13 +82,19 @@ def run(args):
     test_conditions = x_scaler.inverse_transform(test_conditions.reshape(-1, test_conditions.shape[-1])).reshape(test_conditions.shape)
     # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
 
+    # Denormalize the ground truth
+    Y_calib = y_scaler.inverse_transform(Y_calib)
+    Y_test = y_scaler.inverse_transform(Y_test)
+
     # Save the results
     np.save(os.path.join(args.output_saving_path, 'calib_samples.npy'), calib_samples)
     np.save(os.path.join(args.output_saving_path, 'calib_conditions.npy'), calib_conditions)
     np.save(os.path.join(args.output_saving_path, 'test_samples.npy'), test_samples)
     np.save(os.path.join(args.output_saving_path, 'test_conditions.npy'), test_conditions)
+    np.save(os.path.join(args.output_saving_path, 'Y_calib.npy'), Y_calib)
+    np.save(os.path.join(args.output_saving_path, 'Y_test.npy'), Y_test)
 
-
+'''
     # Validate Results
     plt.scatter(
         np.vstack(calib_conditions),
@@ -104,6 +110,7 @@ def run(args):
 
     plt.legend(loc='upper right')
     plt.savefig(os.path.join(args.output_saving_path, 'results_validation.png'))
+'''
 
 if __name__ == '__main__':
     # Input arguments

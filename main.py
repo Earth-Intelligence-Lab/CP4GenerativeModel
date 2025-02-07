@@ -97,8 +97,8 @@ def run(args):
     )
 
     plt.scatter(
-        X_calib,
-        Y_calib,
+        x_scaler.inverse_transform(X_calib),
+        y_scaler.inverse_transform(Y_calib),
         alpha=0.5, s=10, label='Truth', color='blue'
     )
 

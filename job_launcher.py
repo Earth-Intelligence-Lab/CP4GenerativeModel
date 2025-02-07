@@ -113,7 +113,7 @@ class SlurmJob(object):
 def synthetic_data_job():
 
     model_name = 'synthetic_data'
-    experiment_root = f'/home/mila/q/qidong.yang/scratch/wind_obs_exps_hrrr/{model_name}'
+    experiment_root = f'/home/mila/q/qidong.yang/scratch/CP4Gen/{model_name}'
 
     datasets = ['s_curve']
     # datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']

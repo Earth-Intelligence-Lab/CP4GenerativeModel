@@ -27,7 +27,7 @@ class DatasetTensor(Dataset):
         return self.X[idx], self.Y[idx]
 
 
-def get_dataset(name, base_path=None, seed=0):
+def get_dataset(name, data_path=None, seed=0):
 
     # name: dataset name
     # base_path: the path to datasets
@@ -86,7 +86,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = x[:, -1].reshape(n, 1)
 
     if name == "meps_19":
-        df = pd.read_csv(base_path + 'meps_19_reg.csv')
+        df = pd.read_csv(data_path + 'meps_19_reg.csv')
 
         N = len(df)
         column_names = df.columns
@@ -130,7 +130,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df[[response_name]].values.reshape(N, -1)[idx]
 
     if name == "meps_20":
-        df = pd.read_csv(base_path + 'meps_20_reg.csv')
+        df = pd.read_csv(data_path + 'meps_20_reg.csv')
 
         N = len(df)
         column_names = df.columns
@@ -174,7 +174,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df[[response_name]].values.reshape(N, -1)[idx]
 
     if name == "meps_21":
-        df = pd.read_csv(base_path + 'meps_21_reg.csv')
+        df = pd.read_csv(data_path + 'meps_21_reg.csv')
 
         N = len(df)
         column_names = df.columns
@@ -218,7 +218,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df[[response_name]].values.reshape(N, -1)[idx]
 
     if name == "facebook_1":
-        df = pd.read_csv(base_path + 'facebook_1.csv')
+        df = pd.read_csv(data_path + 'facebook_1.csv')
 
         N = len(df)
         # Shuffle dataset
@@ -229,7 +229,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df.iloc[:, [53]].values.reshape(N, -1)[idx]
 
     if name == "facebook_2":
-        df = pd.read_csv(base_path + 'facebook_2.csv')
+        df = pd.read_csv(data_path + 'facebook_2.csv')
 
         N = len(df)
         # Shuffle dataset
@@ -240,7 +240,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df.iloc[:, [53]].values.reshape(N, -1)[idx]
 
     if name == "bio":
-        df = pd.read_csv(base_path + 'CASP.csv')
+        df = pd.read_csv(data_path + 'CASP.csv')
 
         N = len(df)
         # Shuffle dataset
@@ -251,7 +251,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df.iloc[:, [0]].values.reshape(N, -1)[idx]
 
     if name == 'blog_data':
-        df = pd.read_csv(base_path + 'blogData_train.csv', header=None)
+        df = pd.read_csv(data_path + 'blogData_train.csv', header=None)
 
         N = len(df)
         # Shuffle dataset
@@ -262,7 +262,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df.iloc[:, [-1]].values.reshape(N, -1)[idx]
 
     if name == "temperature":
-        df = pd.read_csv(base_path + 'Bias_correction_ucl.csv')
+        df = pd.read_csv(data_path + 'Bias_correction_ucl.csv')
         df = df.drop(columns=['station', 'Date', 'Next_Tmax'])
         df = df.dropna()
 
@@ -275,7 +275,7 @@ def get_dataset(name, base_path=None, seed=0):
         Y = df.iloc[:, [-1]].values.reshape(N, -1)[idx]
 
     if name == "bike":
-        df = pd.read_csv(base_path + 'bike_train.csv')
+        df = pd.read_csv(data_path + 'bike_train.csv')
 
         # # seperating season as per values. this is bcoz this will enhance features.
         season = pd.get_dummies(df['season'], prefix='season')

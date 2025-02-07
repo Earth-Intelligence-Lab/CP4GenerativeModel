@@ -23,11 +23,11 @@ def run(args):
         torch.cuda.manual_seed_all(random_state)
 
     # Get data set
-    base_dataset_path = './data/'
+    data_path = args.data_path
     dataset_name = args.dataset
     print(f'data: {dataset_name}', flush=True)
 
-    X, Y = get_dataset(dataset_name, base_path=base_dataset_path)
+    X, Y = get_dataset(dataset_name, data_path=data_path)
     N = X.shape[0]
 
     train, calib, test = np.split(range(N), [int(.6 * N), int(.8 * N), ])
@@ -82,6 +82,13 @@ def run(args):
     test_conditions = x_scaler.inverse_transform(test_conditions.reshape(-1, test_conditions.shape[-1])).reshape(test_conditions.shape)
     # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)
 
+    # Save the results
+    np.save(os.path.join(args.output_saving_path, 'calib_samples.npy'), calib_samples)
+    np.save(os.path.join(args.output_saving_path, 'calib_conditions.npy'), calib_conditions)
+    np.save(os.path.join(args.output_saving_path, 'test_samples.npy'), test_samples)
+    np.save(os.path.join(args.output_saving_path, 'test_conditions.npy'), test_conditions)
+
+
     # Validate Results
     plt.scatter(
         np.vstack(calib_conditions),
@@ -96,13 +103,15 @@ def run(args):
     )
 
     plt.legend(loc='upper right')
-
+    plt.savefig(os.path.join(args.output_saving_path, 'results_validation.png'))
 
 if __name__ == '__main__':
     # Input arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', default=100, type=int)
     parser.add_argument('--dataset', default='s_curve', type=str)  # dataset name
+    parser.add_argument('--data_path', default='./data/', type=str)  # dataset path
+    parser.add_argument('--output_saving_path', default='./output/', type=str)  # output saving path
     # Training parameters
     parser.add_argument('--n_epochs', type=int, default=20000)
     parser.add_argument('--batch_size', type=int, default=1000)

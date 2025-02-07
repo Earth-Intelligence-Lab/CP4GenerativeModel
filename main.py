@@ -163,6 +163,15 @@ def run(args):
     print(f"PCP empirical coverage: {pcp_coverage:.3f}")
     print(f"PCP empirical efficiency: {np.mean(pcp_exact_length):.3f}")
 
+    # Save the results
+    np.save(os.path.join(args.output_saving_path, 'k_hat_list.npy'), k_hat_list)
+    np.save(os.path.join(args.output_saving_path, 'KMeans_coverage.npy'), coverage_list)
+    np.save(os.path.join(args.output_saving_path, 'KMeans_volume.npy'), volume_list)
+    np.save(os.path.join(args.output_saving_path, 'PCP_coverage.npy'), pcp_coverage)
+    np.save(os.path.join(args.output_saving_path, 'PCP_volume.npy'), np.mean(pcp_exact_length))
+    np.save(os.path.join(args.output_saving_path, 'PCP_VCR_coverage.npy'), emp_coverage)
+    np.save(os.path.join(args.output_saving_path, 'PCP_VCR_volume.npy'), np.mean(rank_pcp_exact_length))
+
     return
 
 if __name__ == '__main__':

@@ -176,3 +176,6 @@ cython_debug/
 
 # Data
 output/
+
+
+clean_main.py

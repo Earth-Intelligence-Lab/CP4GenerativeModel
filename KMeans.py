@@ -12,7 +12,7 @@ def score_fun_KMeans(ys, y_hat, k_hat, eps=1e-6):
 
     d = ys.shape[1]
     if len(ys) != k_hat: # number of clusters less than number of ensemble members
-      kmeans = KMeans(n_clusters=k_hat, random_state=0).fit(ys)
+      kmeans = KMeans(n_clusters=k_hat, n_init='auto', random_state=0).fit(ys)
       means = kmeans.cluster_centers_
       weights = [np.mean(kmeans.labels_ == i) for i in range(k_hat)]
       covariances = [np.cov(ys[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(ys) > 1 else eps * np.eye(d) for i in range(k_hat)]
@@ -50,7 +50,7 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
     d = ys.shape[1]
 
     if len(ys) != k_hat:
-      kmeans = KMeans(n_clusters=k_hat, random_state=0).fit(ys)
+      kmeans = KMeans(n_clusters=k_hat, n_init='auto', random_state=0).fit(ys)
       means = kmeans.cluster_centers_
       weights = [np.mean(kmeans.labels_ == i) for i in range(k_hat)]
       covariances = [np.cov(ys[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(ys) > 1 else eps * np.eye(d) for i in range(k_hat)]

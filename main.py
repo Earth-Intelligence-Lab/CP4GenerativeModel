@@ -102,7 +102,7 @@ def run(args):
     print(' ', flush=True)
 
     # CP4Gen
-    k_hat_list = np.arange(1, args.n_samples + 1, 2)
+    k_hat_list = np.arange(1, args.n_samples - 5)
     qt_list = []
     coverage_list = []
     volume_list = []
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_saving_path', default='./output/', type=str)  # output saving path
 
     # Training parameters
-    parser.add_argument('--n_epochs', type=int, default=2)
+    parser.add_argument('--n_epochs', type=int, default=10000)
     parser.add_argument('--batch_size', type=int, default=1000)
     parser.add_argument('--hidden_dim', type=int, default=128)
     parser.add_argument('--timesteps', type=int, default=100)

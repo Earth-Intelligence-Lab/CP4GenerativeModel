@@ -115,8 +115,8 @@ def synthetic_data_job():
     model_name = 'synthetic_data'
     experiment_root = f'/home/mila/q/qidong.yang/scratch/CP4Gen/{model_name}'
 
-    datasets = ['s_curve']
-    # datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
+    # datasets = ['s_curve']
+    datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
 
     for dataset in datasets:
         job = SlurmJob(model_name=model_name, experiment_root=experiment_root, dataset=dataset)

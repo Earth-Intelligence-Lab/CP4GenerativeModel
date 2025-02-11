@@ -102,7 +102,7 @@ def run(args):
     print(' ', flush=True)
 
     # CP4Gen
-    k_hat_list = np.arange(1, args.n_samples - 5)
+    k_hat_list = np.arange(1, args.n_samples + 1)
     qt_list = []
     coverage_list = []
     volume_list = []

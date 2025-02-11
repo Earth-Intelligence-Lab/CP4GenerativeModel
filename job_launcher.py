@@ -84,7 +84,7 @@ class SlurmJob(object):
             f'#SBATCH --time={self.time}',
             '#SBATCH --cpus-per-task=4',
             '#SBATCH --mem=15Gb',
-            f'#SBATCH --gres=gpu:rtx8000:1',
+       #     f'#SBATCH --gres=gpu:rtx8000:1',
             '#SBATCH --partition=long',
         ]
 
@@ -117,11 +117,16 @@ def synthetic_data_job():
 
     # datasets = ['s_curve']
     datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
+    epochs = [2000, 5000, 10000, 20000, 50000]
+    samples = [30]
 
     for dataset in datasets:
-        job = SlurmJob(model_name=model_name, experiment_root=experiment_root, dataset=dataset)
-        job.launch()
+        for epoch in epochs:
+            for sample in samples:
+                job = SlurmJob(model_name=model_name, experiment_root=experiment_root, dataset=dataset, n_epochs=epoch, n_samples=sample)
+                job.launch()
 
 
 if __name__ == '__main__':
+
     synthetic_data_job()

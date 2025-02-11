@@ -69,9 +69,10 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
         for i in range(k_hat):
             dens[i] = - (multivariate_normal.logpdf(pos, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
         dens = np.min(dens, axis=0)
-
-        dens[dens <= qt] = 1
-        dens[dens > qt] = 0
+        
+        dens_new = np.zeros(dens.shape) * np.nan
+        dens_new[dens <= qt] = 1
+        dens_new[dens > qt] = 0
 
         # compute score
         scores = []
@@ -79,7 +80,7 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
             score = - (multivariate_normal.logpdf(y_hat, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
             scores.append(score)
 
-        volume = (x.shape[0] * x.shape[1] - np.sum(dens)) * (x[0,1] - x[0,0]) * (y[1,0] - y[0,0])
+        volume = (np.sum(dens_new)) * (x[0,1] - x[0,0]) * (y[1,0] - y[0,0])
 
     elif d == 1:
         buffle = (np.max(ys[:,0]) - np.min(ys[:,0])) * 0.1
@@ -88,8 +89,10 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
         for i in range(k_hat):
             dens[i] = - (multivariate_normal.logpdf(x, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
         dens = np.min(dens, axis=0) # min over k_hat----we could also take the summation?
-        dens[dens <= qt] = 1
-        dens[dens > qt] = 0
+
+        dens_new = np.zeros(dens.shape) * np.nan
+        dens_new[dens <= qt] = 1
+        dens_new[dens > qt] = 0
 
         # compute score
         scores = []
@@ -97,8 +100,9 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
             score = - (multivariate_normal.logpdf(y_hat, mean=means[i], cov=covariances[i], allow_singular=True) + np.log(weights[i]))
             scores.append(score)
 
-        volume = np.sum(dens) * (x[1] - x[0])
-    return min(scores), dens, volume
+        volume = (np.sum(dens_new)) * (x[1] - x[0])
+
+    return min(scores), dens_new, volume
 
 
 

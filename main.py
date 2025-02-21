@@ -15,6 +15,7 @@ from flow_matching import *
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
+
 def run(args):
   
     # Set random seed
@@ -26,7 +27,7 @@ def run(args):
         torch.cuda.manual_seed_all(random_state)
 
     # Get togo data list
-    togo_list = ['Mengze']
+    togo_list = ['Mengze', 'synthetic_normal']
 
     # Get data set
     dataset_name = args.dataset

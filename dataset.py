@@ -27,10 +27,30 @@ class DatasetTensor(Dataset):
         return self.X[idx], self.Y[idx]
 
 
+def get_togo_dataset(name, data_path=None):
+
+    # name: dataset name
+    # data_path: the path to datasets
+
+    # Y_ens_calib: (n_calib, n_samples, dim_y)
+    # Y_calib: (n_calib, dim_y)
+    # Y_ens_test: (n_test, n_samples, dim_y)
+    # Y_test: (n_test, dim_y)
+
+    if name == 'Mengze':
+        Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_NSM.npy')
+        Y_calib = np.load(data_path + 'Mengze/y2_reduce_NSM.npy')[:, 0, :]
+
+        Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_NSM.npy')
+        Y_test = np.load(data_path + 'Mengze/y1_reduce_NSM.npy')[:, 0, :]
+
+    return Y_ens_calib, Y_calib, Y_ens_test, Y_test
+
+
 def get_dataset(name, data_path=None, seed=0):
 
     # name: dataset name
-    # base_path: the path to datasets
+    # data_path: the path to datasets
 
     # X: (N, dim_x)
     # Y: (N, dim_y)

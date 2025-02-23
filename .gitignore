@@ -176,7 +176,7 @@ cython_debug/
 
 # Data
 output/
-
+data/
 
 clean_main.py
 KMeans_optK.py

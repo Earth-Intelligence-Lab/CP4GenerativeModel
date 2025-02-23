@@ -27,10 +27,79 @@ class DatasetTensor(Dataset):
         return self.X[idx], self.Y[idx]
 
 
+def generate_synthetic_generative_data(N, N_ens, k, d, seed=100):
+    # Using normal distribution to generate synthetic data
+    # N: size of dataset
+    # N_ens: size of ensemble set
+    # k: max possible gaussian components
+    # d: dimension of gaussian variables
+
+    # data: (N, N_ens, d)
+
+    np.random.seed(seed)
+
+    W = np.random.uniform(0, np.sqrt(k), (N, k))
+    W = np.exp(W) / np.sum(np.exp(W), axis=1, keepdims=True) # (N, k)
+
+    Mu = np.random.uniform(-5, 5, (N, k, d)) # (N, k, d)
+
+    M = np.random.rand(N * k, d, d) -.5 + np.tile(np.eye(d), (N * k, 1, 1))
+    M_T = np.transpose(M, axes=(0, 2, 1))
+
+    Sigma = np.matmul(M, M_T)
+    Sigma = Sigma.reshape((N, k, d, d)) # (N, k, d, d)
+
+    guassian_index = []
+    for i in range(N):
+        guassian_index.append(np.random.choice(k, size=N_ens, replace=True, p=W[i]))
+    guassian_index = np.array(guassian_index) # (N, N_ens)
+
+    data = []
+    for i in range(N):
+        ens = []
+        for j in range(N_ens):
+            mu = Mu[i][guassian_index[i][j]]
+            sigma = Sigma[i][guassian_index[i][j]]
+            ens.append(np.random.multivariate_normal(mu, sigma))
+        data.append(ens) # (N, N_ens, d)
+
+    return np.array(data)
+
+
+def get_togo_dataset(name, data_path=None):
+
+    # name: dataset name
+    # data_path: the path to datasets
+
+    # Y_ens_calib: (n_calib, n_samples, dim_y)
+    # Y_calib: (n_calib, dim_y)
+    # Y_ens_test: (n_test, n_samples, dim_y)
+    # Y_test: (n_test, dim_y)
+
+    if name == 'Mengze':
+        Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_NSM.npy')
+        Y_calib = np.load(data_path + 'Mengze/y2_reduce_NSM.npy')[:, 0, :]
+
+        Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_NSM.npy')
+        Y_test = np.load(data_path + 'Mengze/y1_reduce_NSM.npy')[:, 0, :]
+
+    if name == 'synthetic_normal':
+        data = generate_synthetic_generative_data(N=2000, N_ens=41, k=3, d=2, seed=100)
+        # (N, N_ens, d)
+
+        Y_ens_calib = data[:1000, :40, :]
+        Y_calib = data[:1000, 40, :]
+
+        Y_ens_test = data[1000:, :40, :]
+        Y_test = data[1000:, 40, :]
+
+    return Y_ens_calib, Y_calib, Y_ens_test, Y_test
+
+
 def get_dataset(name, data_path=None, seed=0):
 
     # name: dataset name
-    # base_path: the path to datasets
+    # data_path: the path to datasets
 
     # X: (N, dim_x)
     # Y: (N, dim_y)

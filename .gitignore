@@ -178,5 +178,9 @@ cython_debug/
 output/
 data/
 
+# trial files
 clean_main.py
 KMeans_optK.py
+
+# Jupyter Notebook
+*.ipynb

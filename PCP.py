@@ -178,17 +178,62 @@ def get_coverage_length_overlap(radius,Y_test):
     return Length
 
 
-def get_coverage_area_overlap(radius, Y_test,Y_data,dimension_y=2):
+def get_coverage_area_overlap(radius, Y_test,d=2):
     """
-    Y_test in the shape of (n_test,n_sample)
+    Y_test in the shape of (n_test,n_sample,d)
     """
-    n_test = Y_test.shape[0]     
-    random_data = np.random.uniform(low=[min(Y_data[:,i]) for i in range(dimension_y)], high=[max(Y_data[:,i]) for i in range(dimension_y)], size=(100**dimension_y,dimension_y))
-    if isinstance(radius, float):
-        pass
-    else:radius=radius.numpy()
+    n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
+    M = 100**d   
+
+    random_data = np.random.uniform(low=[np.min(Y_test[:,:,i]) for i in range(d)], high=[np.max(Y_test[:,:,i]) for i in range(d)], size=(M,d))
+
     efficenciy=[]    
     for i in range(n_test):
-        coverage_region = np.mean(np.any(np.linalg.norm(random_data.reshape(100**dimension_y,dimension_y,1)-Y_test[i],axis=1)<=radius,axis=1))
+        coverage_region = np.mean(np.any(np.linalg.norm(random_data.reshape(M,d,1)-Y_test[i].T,axis=1)<=radius,axis=1))
         efficenciy.append(coverage_region)
-    return efficenciy
+    volume = np.prod(np.array([np.max(Y_test[:,:,i]) for i in range(d)]) - np.array([np.min(Y_test[:,:,i]) for i in range(d)]))
+    return np.array(efficenciy) * volume
+
+
+def get_coverage_area_overlap_grid(radius, Y_test):
+    """
+    Y_test in the shape of (n_test,n_sample,d)
+    """
+    n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
+    grid_res = 100
+
+    if not isinstance(radius, float) and not isinstance(radius, np.ndarray):
+        radius = np.array(radius)
+
+    volume_list=[]
+    for Y_data in Y_test:
+        buffle0 = (np.max(Y_data[:,0]) - np.min(Y_data[:,0])) * 0.1
+        buffle1 = (np.max(Y_data[:,1]) - np.min(Y_data[:,1])) * 0.1
+        x, y = np.meshgrid(np.linspace(np.min(Y_data[:,0])-buffle0, np.max(Y_data[:,0])+buffle0, grid_res), \
+                           np.linspace(np.min(Y_data[:,1])-buffle1, np.max(Y_data[:,1])+buffle1, grid_res))
+        grid_data = np.dstack((x, y)).reshape(grid_res**d,d, 1)
+        coverage_ratio = np.mean(np.any(np.linalg.norm(grid_data-Y_data.T,axis=1)<=radius,axis=1))
+        volume = np.prod(np.array([np.max(Y_data[:,i]) for i in range(d)]) - np.array([np.min(Y_data[:,i]) for i in range(d)]))
+        volume_list.append(coverage_ratio * volume)
+    return volume_list
+
+def get_coverage_area_overlap_random(radius, Y_test):
+    """
+    Y_test in the shape of (n_test,n_sample,d)
+    """
+    n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
+    M = 100**d
+
+    if not isinstance(radius, float) and not isinstance(radius, np.ndarray):
+        radius = np.array(radius)
+
+    volume_list=[]
+    for Y_data in Y_test:
+        buffle = [(np.max(Y_data[:,i]) - np.min(Y_data[:,i])) * 0.1 for i in range(d)]
+        lower_bound = [np.min(Y_data[:,i]) - buffle[i] for i in range(d)]
+        higher_bound = [np.max(Y_data[:,i]) + buffle[i] for i in range(d)]
+        random_data = np.random.uniform(low=lower_bound, high=higher_bound, size=(M,d))
+        coverage_ratio = np.mean(np.any(np.linalg.norm(random_data.reshape(M,d,1)-Y_data.T,axis=1)<=radius,axis=1))
+        volume =  np.prod(np.array(higher_bound) - np.array(lower_bound))
+        volume_list.append(coverage_ratio * volume)
+    return volume_list

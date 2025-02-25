@@ -118,6 +118,22 @@ def get_coverage_length_brutal(ys, means, covariances, weights, qt, k_hat, grid_
         dens_new[dens <= qt] = 1
         dens_new[dens > qt] = 0
         volume = (np.sum(dens_new)) * (x[0,1] - x[0,0]) * (y[1,0] - y[0,0])
+    else:
+        M=100**d
+        buffle = [(np.max(ys[:,i]) - np.min(ys[:,i])) * 0.1 for i in range(d)]
+        lower_bound = [np.min(ys[:,i]) - buffle[i] for i in range(d)]
+        higher_bound = [np.max(ys[:,i]) + buffle[i] for i in range(d)]
+        MC_data = np.random.uniform(low=lower_bound, high=higher_bound, size=(M,d))
+        dens = np.zeros((k_hat, MC_data.shape[0]), float)
+        for i in range(k_hat):
+            dens[i] = - (multivariate_normal.logpdf(MC_data, mean=means[i], cov=covariances[i], allow_singular=True)\
+                      + np.log(weights[i]))
+        dens = np.min(dens, axis=0)
+
+        dens_new = np.zeros(dens.shape) * np.nan
+        dens_new[dens <= qt] = 1
+        dens_new[dens > qt] = 0
+        volume = (np.sum(dens_new)) * np.prod(np.array(higher_bound) - np.array(lower_bound))
     return volume
 
 

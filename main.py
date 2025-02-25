@@ -56,6 +56,7 @@ def run(args):
         Y_calib = y_scaler.transform(Y_calib)
         Y_test = y_scaler.transform(Y_test)
 
+        """
         # Create Dataset objects
         train_dataset = DatasetTensor(X_train, Y_train)
         calib_dataset = DatasetTensor(X_calib, Y_calib)
@@ -100,6 +101,13 @@ def run(args):
         np.save(os.path.join(args.output_saving_path, f'{args.dataset}/test_conditions.npy'), test_conditions)
         np.save(os.path.join(args.output_saving_path, f'{args.dataset}/Y_calib.npy'), Y_calib)
         np.save(os.path.join(args.output_saving_path, f'{args.dataset}/Y_test.npy'), Y_test)
+        """
+        
+        # Load the results  
+        calib_samples = np.load(os.path.join(args.output_saving_path, f'{args.dataset}/calib_samples.npy'))
+        test_samples = np.load(os.path.join(args.output_saving_path, f'{args.dataset}/test_samples.npy'))
+        Y_calib = np.load(os.path.join(args.output_saving_path, f'{args.dataset}/Y_calib.npy'))
+        Y_test = np.load(os.path.join(args.output_saving_path, f'{args.dataset}/Y_test.npy'))
 
         #Calculate statistics and save results
         Y_ens_calib, Y_calib, Y_ens_test, Y_test = calib_samples, Y_calib, test_samples, Y_test
@@ -107,7 +115,9 @@ def run(args):
         # Y_calib: (n_batch, dim_y)
     else:
         Y_ens_calib, Y_calib, Y_ens_test, Y_test = get_togo_dataset(dataset_name, data_path=args.data_path)
-    
+        Y_ens_calib = Y_ens_calib[:,:args.n_samples,:]
+        Y_ens_test = Y_ens_test[:,:args.n_samples,:]
+        
     print(f'Y_ens_calib shape: {Y_ens_calib.shape}', flush=True)
     print(f'Y_calib shape: {Y_calib.shape}', flush=True)
     print(f'Y_ens_test shape: {Y_ens_test.shape}', flush=True)
@@ -118,8 +128,9 @@ def run(args):
     print(' ', flush=True)
 
 
+
     #===========CP4Gen===========
-    k_hat_list = [1,2]
+    k_hat_list = [1,2,3,4,5]
     qt_list = []
     coverage_list = []
     volume_list = []
@@ -131,8 +142,8 @@ def run(args):
 
         #Calculate statistics and save results
         print(f'k_hat: {k_hat}')
-        print(f'Test Coverage Rate: {np.mean(test_scores < qt):.2f}')
-        print(f'Average Volume: {np.mean(test_volumes):.2f}')
+        print(f'Test Coverage Rate: {np.mean(test_scores < qt):.6f}')
+        print(f'Average Volume: {np.mean(test_volumes):.6f}')
         qt_list.append(qt)
         coverage_list.append(np.mean(test_scores < qt))
         volume_list.append(np.mean(test_volumes))
@@ -141,8 +152,8 @@ def run(args):
 
     print('CP4Gen:', flush=True)
     print(f'k_hat: {k_hat_list[idx]}', flush=True)
-    print(f'Empirical coverage: {coverage_list[idx]:.3f}', flush=True)
-    print(f'Empirical efficiency: {volume_list[idx]:.3f}', flush=True)
+    print(f'Empirical coverage: {coverage_list[idx]:.6f}', flush=True)
+    print(f'Empirical efficiency: {volume_list[idx]:.6f}', flush=True)
 
     print(' ', flush=True)
     print('--------------------------------', flush=True)
@@ -150,13 +161,14 @@ def run(args):
 
 
     #===========PCP-VCR===========
-    Y_hat = np.concatenate((Y_ens_calib, Y_ens_test), axis=0)
-    Y_cal_test = np.concatenate((Y_calib, Y_test), axis=0).reshape(-1, 1, Y_ens_calib.shape[2])
+    Y_hat = np.concatenate((Y_ens_calib, Y_ens_test), axis=0) # (n_batch, n_samples, dim_y)
+    Y_cal_test = np.concatenate((Y_calib, Y_test), axis=0).reshape(-1, 1, Y_ens_calib.shape[2]) # (n_batch, 1, dim_y)
     # Ranking the samples by their average m-nearest neighbor distances, here we pick m=4.
     # Compute pairwise distances between Y and Y_hat_ranked. Each row is a non-conformity score vector.
     pcp_vcr = PCP.PCP_VCR(n_sample_K = args.n_samples,alpha=0.1,y_dim = Y_ens_calib.shape[2])
-    Y_hat_ranked = pcp_vcr.rank(Y_cal_test,Y_hat,k_neighbor = 4)
     dist_matrix = pcp_vcr.compute_dist_matrix(Y_cal_test,Y_hat)
+    """
+    Y_hat_ranked = pcp_vcr.rank(Y_cal_test,Y_hat,k_neighbor = 4)
     dist_matrix_rank = pcp_vcr.compute_dist_matrix(Y_cal_test,Y_hat_ranked)
     # Approximate algorithm on calibration data: initialize different entries in range(n_sample), and select the approximated solution with the best approximated efficiency (sum of prediction regions, no consideration of overlap).
     E_q_list = []
@@ -170,7 +182,12 @@ def run(args):
     # get_coverage_length_overlap function is used to compute the exact efficiency of the coverage set, but this is only computable in 1-dim data. For higher dimensions, there is no analytical solution other than Monte Carlo. 
     pcp_vcr_radius = E_q_list[np.argmin(radius_list)]
     emp_coverage = pcp_vcr.empirical_coverage(dist_matrix_rank[len(Y_calib):,:],pcp_vcr_radius)
-    rank_pcp_exact_length = PCP.get_coverage_length_overlap(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
+    if Y_ens_calib.shape[2] == 1:
+        rank_pcp_exact_length = PCP.get_coverage_length_overlap(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
+    elif Y_ens_calib.shape[2] == 2:
+        rank_pcp_exact_length = PCP.get_coverage_area_overlap_grid(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
+    else:
+        rank_pcp_exact_length = PCP.get_coverage_area_overlap_MC(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
 
     print('PCP-VCR:', flush=True)
     print(f'Empirical coverage: {emp_coverage:.3f}', flush=True)
@@ -179,13 +196,16 @@ def run(args):
     print(' ', flush=True)
     print('--------------------------------', flush=True)
     print(' ', flush=True)
-
+    """
 
     #===========PCP===========
     pcp_radius = pcp_vcr.pcp_radius(dist_matrix[:len(Y_calib)])
     pcp_coverage = pcp_vcr.empirical_coverage(dist_matrix[len(Y_calib):],pcp_radius)
 
-    pcp_exact_length = PCP.get_coverage_length_overlap(pcp_radius,Y_hat[len(Y_calib):])
+    if Y_ens_calib.shape[2] == 1:
+        pcp_exact_length = PCP.get_coverage_length_overlap(pcp_radius,Y_hat[len(Y_calib):])
+    else:
+        pcp_exact_length = PCP.get_coverage_area_overlap(pcp_radius,Y_hat[len(Y_calib):])
 
     print('PCP:', flush=True)
     print(f'Empirical coverage: {pcp_coverage:.3f}', flush=True)
@@ -196,13 +216,13 @@ def run(args):
     print(' ', flush=True)
 
     #===========Save results===========
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/k_hat_list.npy'), k_hat_list)
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_coverage.npy'), coverage_list)
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_volume.npy'), volume_list)
+    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/k_hat_list.npy'), k_hat_list)
+    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_coverage.npy'), coverage_list)
+    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_volume.npy'), volume_list)
     np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_coverage.npy'), pcp_coverage)
     np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_volume.npy'), np.mean(pcp_exact_length))
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_coverage.npy'), emp_coverage)
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_volume.npy'), np.mean(rank_pcp_exact_length))
+    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_coverage.npy'), emp_coverage)
+    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_volume.npy'), np.mean(rank_pcp_exact_length))
 
     return
 

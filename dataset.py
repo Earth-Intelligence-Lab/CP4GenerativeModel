@@ -76,12 +76,26 @@ def get_togo_dataset(name, data_path=None):
     # Y_ens_test: (n_test, n_samples, dim_y)
     # Y_test: (n_test, dim_y)
 
-    if name == 'Mengze':
+    if name == 'Mengze_2':
         Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_NSM.npy')
         Y_calib = np.load(data_path + 'Mengze/y2_reduce_NSM.npy')[:, 0, :]
 
         Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_NSM.npy')
         Y_test = np.load(data_path + 'Mengze/y1_reduce_NSM.npy')[:, 0, :]
+
+    if name == 'Mengze_3':
+        Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_NMSM.npy')
+        Y_calib = np.load(data_path + 'Mengze/y2_reduce_NMSM.npy')[:, 0, :]
+
+        Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_NMSM.npy')
+        Y_test = np.load(data_path + 'Mengze/y1_reduce_NMSM.npy')[:, 0, :]
+
+    if name == 'Mengze_4':
+        Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_QM.npy')
+        Y_calib = np.load(data_path + 'Mengze/y2_reduce_QM.npy')[:, 0, :]
+
+        Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_QM.npy')
+        Y_test = np.load(data_path + 'Mengze/y1_reduce_QM.npy')[:, 0, :]
 
     if name == 'synthetic_normal':
         data = generate_synthetic_generative_data(N=2000, N_ens=41, k=3, d=2, seed=100)

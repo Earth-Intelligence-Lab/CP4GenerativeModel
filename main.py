@@ -27,7 +27,7 @@ def run(args):
         torch.cuda.manual_seed_all(random_state)
 
     # Get togo data list
-    togo_list = ['Mengze', 'synthetic_normal']
+    togo_list = ['Mengze_2', 'Mengze_3', 'Mengze_4', 'synthetic_normal']
 
     # Get data set
     dataset_name = args.dataset

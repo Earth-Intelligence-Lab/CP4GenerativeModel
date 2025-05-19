@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from matplotlib.patches import Ellipse
 from scipy.stats import multivariate_normal
+from sklearn.mixture import BayesianGaussianMixture
+
 
 def score_fun_KMeans(ys, y_hat, k_hat, eps=1e-6):
 
@@ -11,6 +13,7 @@ def score_fun_KMeans(ys, y_hat, k_hat, eps=1e-6):
     # k_hat: scalar, number of clusters in k-NN
 
     d = ys.shape[1]
+
     if len(ys) != k_hat: # number of clusters less than number of ensemble members
       kmeans = KMeans(n_clusters=k_hat, n_init='auto', random_state=0).fit(ys)
       means = kmeans.cluster_centers_
@@ -28,7 +31,9 @@ def score_fun_KMeans(ys, y_hat, k_hat, eps=1e-6):
 
     return min(distances)
 
+
 def summary_score_KMeans(data_ys, data_y_hat, k_hat):
+
     # data: (N_train, N_ens, d)
     # k_hat: scalar
 
@@ -36,6 +41,27 @@ def summary_score_KMeans(data_ys, data_y_hat, k_hat):
     for idx, (ys, y_hat) in enumerate(zip(data_ys, data_y_hat)):
         s = score_fun_KMeans(ys, y_hat, k_hat)
         scores.append(s)
+
+    return scores
+
+
+def summary_score_KMeans_adaptive(data_ys, data_y_hat, weight_th, max_k=10):
+
+    # data: (N_train, N_ens, d)
+    # weight_th: scalar, threshold for the weight of the cluster
+
+    scores = []
+    for idx, (ys, y_hat) in enumerate(zip(data_ys, data_y_hat)):
+
+        bgmm = BayesianGaussianMixture(n_components=max_k, random_state=42)
+        bgmm.fit(ys)
+
+        weights = bgmm.weights_
+        k_hat = np.sum(weights > weight_th)
+        
+        s = score_fun_KMeans(ys, y_hat, k_hat)
+        scores.append(s)
+
     return scores
 
 
@@ -105,7 +131,6 @@ def inference_KMeans(ys, y_hat, k_hat, qt, eps=1e-6, grid_res=100):
     return min(scores), dens_new, volume
 
 
-
 def summary_inference_KMeans(data_ys, data_y_hat, k_hat, qt, grid_res=200):
 
     # data: (N_test, N_ens, d)
@@ -122,3 +147,33 @@ def summary_inference_KMeans(data_ys, data_y_hat, k_hat, qt, grid_res=200):
         volumes.append(volume)
 
     return np.array(scores), np.array(volumes)
+
+
+def summary_inference_KMeans_adaptive(data_ys, data_y_hat, weight_th, qt, max_k=10, grid_res=200):
+
+    # data_ys: (N_test, N_ens, d)
+    # data_y_hat: (N_test, d)
+    # weight_th: scalar, threshold for the weight of the cluster
+    # qt: scalar, quantile corresponding to the coverage rate
+    # k_max: scalar, maximum number of clusters
+
+    scores = []
+    volumes = []
+
+    for idx, (ys, y_hat) in enumerate(zip(data_ys, data_y_hat)):
+
+        bgmm = BayesianGaussianMixture(n_components=max_k, random_state=42)
+        bgmm.fit(ys)
+
+        weights = bgmm.weights_
+        k_hat = np.sum(weights > weight_th)        
+
+        score, dens, volume = inference_KMeans(ys, y_hat, k_hat=k_hat, qt=qt, grid_res=grid_res)
+
+        scores.append(score)
+        volumes.append(volume)
+
+    return np.array(scores), np.array(volumes)
+
+
+

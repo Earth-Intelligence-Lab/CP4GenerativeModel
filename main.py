@@ -140,6 +140,32 @@ def run(args):
     print('--------------------------------', flush=True)
     print(' ', flush=True)
 
+    # CP4Gen Adaptive
+    weight_th_list = [0.01, 0.05, 0.1, 0.2, 0.5]
+    qt_list = []
+    coverage_list = []
+    volume_list = []
+    for i in range(len(weight_th_list)):
+        weight_th = weight_th_list[i]
+        calib_scores = KMeans.summary_score_KMeans_adaptive(Y_ens_calib, Y_calib, weight_th, max_k=args.max_k)
+        qt = np.quantile(calib_scores, args.coverage) 
+        test_scores, test_volumes = KMeans.summary_inference_KMeans_adaptive(Y_ens_test, Y_test, weight_th, qt=qt, max_k=args.max_k)
+
+        qt_list.append(qt)
+        coverage_list.append(np.mean(test_scores < qt))
+        volume_list.append(np.mean(test_volumes))
+    
+    idx = np.argmin(volume_list)
+
+    print('CP4Gen Adaptive:', flush=True)
+    print(f'weight threshold: {weight_th_list[idx]}', flush=True)
+    print(f'Empirical coverage: {coverage_list[idx]:.3f}', flush=True)
+    print(f'Empirical efficiency: {volume_list[idx]:.3f}', flush=True)
+
+    print(' ', flush=True)
+    print('--------------------------------', flush=True)
+    print(' ', flush=True)
+
     # PCP-VCR
     Y_hat = np.concatenate((Y_ens_calib, Y_ens_test), axis=0)
     Y_cal_test = np.concatenate((Y_calib, Y_test), axis=0).reshape(-1, 1, Y_ens_calib.shape[2])
@@ -213,6 +239,7 @@ if __name__ == '__main__':
     # PCP parameters
     parser.add_argument('--n_samples', type=int, default=30)
     parser.add_argument('--coverage', type=float, default=0.9)
+    parser.add_argument('--max_k', type=int, default=10)
     #parser.add_argument('--k_hat', type=int, default=3)
 
     args = parser.parse_args()
@@ -231,5 +258,5 @@ if __name__ == '__main__':
     print(f'lr: {args.lr}', flush=True)
     print(f'n_samples: {args.n_samples}', flush=True)
     print(f'coverage: {args.coverage}', flush=True)
-
+    print(f'max_k: {args.max_k}', flush=True)
     run(args)

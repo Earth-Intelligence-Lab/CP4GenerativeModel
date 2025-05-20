@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 
+
 def run(args):
     # Define a dynamic filename using a timestamp
     timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -244,17 +245,35 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='s_curve', type=str)  # dataset name
     parser.add_argument('--data_path', default='./data/', type=str)  # dataset path
     parser.add_argument('--output_saving_path', default='./output/', type=str)  # output saving path
+
     # Training parameters
-    parser.add_argument('--n_epochs', type=int, default=20000)
+    parser.add_argument('--n_epochs', type=int, default=10000)
     parser.add_argument('--batch_size', type=int, default=1000)
-    parser.add_argument('--hidden_dim', type=int, default=64)
+    parser.add_argument('--hidden_dim', type=int, default=128)
     parser.add_argument('--timesteps', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
+
     # PCP parameters
-    parser.add_argument('--n_samples', type=int, default=50)
+    parser.add_argument('--n_samples', type=int, default=30)
     parser.add_argument('--coverage', type=float, default=0.9)
-    parser.add_argument('--k_hat', type=int, default=3)
+    parser.add_argument('--max_k', type=int, default=10)
+    #parser.add_argument('--k_hat', type=int, default=3)
+
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
+    # Print configuration
+    print('Experiment Configuration:', flush=True)
+    print(f'seed: {args.seed}', flush=True)
+    print(f'dataset: {args.dataset}', flush=True)
+    print(f'data_path: {args.data_path}', flush=True)
+    print(f'output_saving_path: {args.output_saving_path}', flush=True)
+    print(f'n_epochs: {args.n_epochs}', flush=True)
+    print(f'batch_size: {args.batch_size}', flush=True)
+    print(f'hidden_dim: {args.hidden_dim}', flush=True)
+    print(f'timesteps: {args.timesteps}', flush=True)
+    print(f'lr: {args.lr}', flush=True)
+    print(f'n_samples: {args.n_samples}', flush=True)
+    print(f'coverage: {args.coverage}', flush=True)
+    print(f'max_k: {args.max_k}', flush=True)
     run(args)

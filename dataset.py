@@ -83,6 +83,13 @@ def get_togo_dataset(name, data_path=None):
         Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_NSM.npy')
         Y_test = np.load(data_path + 'Mengze/y1_reduce_NSM.npy')[:, 0, :]
 
+    if name == 'Mengze_nearest':
+        Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_TP.npy')
+        Y_calib = np.load(data_path + 'Mengze/y2_reduce_TP.npy')[:, 0, :]
+
+        Y_ens_test = np.load(data_path + 'Mengze/y_hat1_reduce_TP.npy')
+        Y_test = np.load(data_path + 'Mengze/y1_reduce_TP.npy')[:, 0, :]        
+
     if name == 'Mengze_3':
         Y_ens_calib = np.load(data_path + 'Mengze/y_hat2_reduce_NMSM.npy')
         Y_calib = np.load(data_path + 'Mengze/y2_reduce_NMSM.npy')[:, 0, :]

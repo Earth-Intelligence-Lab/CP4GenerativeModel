@@ -95,7 +95,7 @@ def train_flow_matching(model, gaussian_path, dataloader, optimizer, num_epochs,
 
             Loss += loss.item()
 
-        print(f"Epoch {epoch + 1}, Loss: {Loss:.4f}", flush=True)
+        # print(f"Epoch {epoch + 1}, Loss: {Loss:.4f}", flush=True)
 
 
 def generate_data(model, gaussian_path, condition, timesteps, device):

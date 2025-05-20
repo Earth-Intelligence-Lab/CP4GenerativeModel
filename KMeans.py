@@ -57,7 +57,7 @@ def summary_score_KMeans_adaptive(data_ys, data_y_hat, weight_th, max_k=10):
         bgmm.fit(ys)
 
         weights = bgmm.weights_
-        k_hat = np.sum(weights > weight_th)
+        k_hat = max(1, np.sum(weights > weight_th))
         
         s = score_fun_KMeans(ys, y_hat, k_hat)
         scores.append(s)
@@ -166,7 +166,7 @@ def summary_inference_KMeans_adaptive(data_ys, data_y_hat, weight_th, qt, max_k=
         bgmm.fit(ys)
 
         weights = bgmm.weights_
-        k_hat = np.sum(weights > weight_th)        
+        k_hat = max(1, np.sum(weights > weight_th))        
 
         score, dens, volume = inference_KMeans(ys, y_hat, k_hat=k_hat, qt=qt, grid_res=grid_res)
 

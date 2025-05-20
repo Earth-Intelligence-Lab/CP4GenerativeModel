@@ -160,6 +160,7 @@ def get_overlap_length(intervals):
 def get_coverage_length_overlap(radius,Y_test):
     """
     Y_test in the shape of (n_test,n_sample)
+    d=1
     """
     
     n_test = Y_test.shape[0];n_sample = Y_test.shape[1]
@@ -178,58 +179,61 @@ def get_coverage_length_overlap(radius,Y_test):
     return Length
 
 
-def get_coverage_area_overlap(radius, Y_test,d=2):
+def get_coverage_area_overlap(radius, Y_test, M=100**2):
     """
     Y_test in the shape of (n_test,n_sample,d)
+    d=2
     """
     n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
-    M = 100**d   
-
-    random_data = np.random.uniform(low=[np.min(Y_test[:,:,i]) for i in range(d)], high=[np.max(Y_test[:,:,i]) for i in range(d)], size=(M,d))
+    buffle = [(np.max(Y_test[:,:,i]) - np.min(Y_test[:,:,i])) * 0.2 for i in range(d)]
+    lower_bound = np.array([np.min(Y_test[:,:,i]) - buffle[i] for i in range(d)])
+    higher_bound = np.array([np.max(Y_test[:,:,i]) + buffle[i] for i in range(d)])
+    random_data = np.random.uniform(low=lower_bound, high=higher_bound, size=(M,d))
 
     efficenciy=[]    
     for i in range(n_test):
         coverage_region = np.mean(np.any(np.linalg.norm(random_data.reshape(M,d,1)-Y_test[i].T,axis=1)<=radius,axis=1))
         efficenciy.append(coverage_region)
-    volume = np.prod(np.array([np.max(Y_test[:,:,i]) for i in range(d)]) - np.array([np.min(Y_test[:,:,i]) for i in range(d)]))
+    volume = np.prod(higher_bound - lower_bound)
+    print('get_coverage_area_overlap', 'lower_bound', lower_bound, 'higher_bound', higher_bound)
     return np.array(efficenciy) * volume
 
 
-def get_coverage_area_overlap_grid(radius, Y_test):
+def get_coverage_area_overlap_grid(radius, Y_test, grid_res=100):
     """
     Y_test in the shape of (n_test,n_sample,d)
+    d=2
     """
     n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
-    grid_res = 100
-
     if not isinstance(radius, float) and not isinstance(radius, np.ndarray):
         radius = np.array(radius)
 
     volume_list=[]
     for Y_data in Y_test:
-        buffle0 = (np.max(Y_data[:,0]) - np.min(Y_data[:,0])) * 0.1
-        buffle1 = (np.max(Y_data[:,1]) - np.min(Y_data[:,1])) * 0.1
-        x, y = np.meshgrid(np.linspace(np.min(Y_data[:,0])-buffle0, np.max(Y_data[:,0])+buffle0, grid_res), \
-                           np.linspace(np.min(Y_data[:,1])-buffle1, np.max(Y_data[:,1])+buffle1, grid_res))
-        grid_data = np.dstack((x, y)).reshape(grid_res**d,d, 1)
+        buffle = [(np.max(Y_data[:,i]) - np.min(Y_data[:,i])) * 0.2 for i in range(d)]
+        X_grid = np.linspace(np.min(Y_data[:,0])-buffle[0], np.max(Y_data[:,0])+buffle[0], grid_res)
+        Y_grid = np.linspace(np.min(Y_data[:,1])-buffle[1], np.max(Y_data[:,1])+buffle[1], grid_res)
+        x, y = np.meshgrid(X_grid, Y_grid)
+        grid_data = np.dstack((x, y)).reshape(grid_res**d, d, 1)
         coverage_ratio = np.mean(np.any(np.linalg.norm(grid_data-Y_data.T,axis=1)<=radius,axis=1))
-        volume = np.prod(np.array([np.max(Y_data[:,i]) for i in range(d)]) - np.array([np.min(Y_data[:,i]) for i in range(d)]))
+        volume = np.prod(X_grid[-1]-X_grid[0]) * np.prod(Y_grid[-1]-Y_grid[0])
         volume_list.append(coverage_ratio * volume)
     return volume_list
 
-def get_coverage_area_overlap_random(radius, Y_test):
+def get_coverage_area_overlap_random(radius, Y_test, M=None):
     """
     Y_test in the shape of (n_test,n_sample,d)
+    d>=3
     """
     n_test = Y_test.shape[0];n_sample = Y_test.shape[1];d = Y_test.shape[2]
-    M = 100**d
-
+    if M is None:
+        M = 100**d
     if not isinstance(radius, float) and not isinstance(radius, np.ndarray):
         radius = np.array(radius)
 
     volume_list=[]
     for Y_data in Y_test:
-        buffle = [(np.max(Y_data[:,i]) - np.min(Y_data[:,i])) * 0.1 for i in range(d)]
+        buffle = [(np.max(Y_data[:,i]) - np.min(Y_data[:,i])) * 0.2 for i in range(d)]
         lower_bound = [np.min(Y_data[:,i]) - buffle[i] for i in range(d)]
         higher_bound = [np.max(Y_data[:,i]) + buffle[i] for i in range(d)]
         random_data = np.random.uniform(low=lower_bound, high=higher_bound, size=(M,d))

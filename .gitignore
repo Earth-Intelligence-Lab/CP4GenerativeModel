@@ -179,7 +179,7 @@ output/
 data/
 
 # trial files
-clean_main.py
+test_main.py
 KMeans_optK.py
 
 # Jupyter Notebook

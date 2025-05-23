@@ -191,7 +191,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--n_samples', type=int, default=300)
 
-    # PCP parameters
+    # CP parameters
+    parser.add_argument('--CP_type', type=str, default='PCP')
     parser.add_argument('--n_ens', type=int, default=30)
     parser.add_argument('--coverage', type=float, default=0.9)
     parser.add_argument('--max_k', type=int, default=10)
@@ -229,6 +230,7 @@ if __name__ == '__main__':
     print(f'timesteps: {args.timesteps}', flush=True)
     print(f'lr: {args.lr}', flush=True)
     print(f'n_samples: {args.n_samples}', flush=True)
+    print(f'CP_type: {args.CP_type}', flush=True)
     print(f'n_ens: {args.n_ens}', flush=True)
     print(f'coverage: {args.coverage}', flush=True)
     print(f'max_k: {args.max_k}', flush=True)

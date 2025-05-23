@@ -111,7 +111,6 @@ class SlurmJob(object):
         os.system(f'cat {os.path.join(self.slurm_code_path, self.slurm_filename)} | sbatch')
 
 
-
 def synthetic_data_job():
 
     model_name = 'synthetic_data'

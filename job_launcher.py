@@ -5,7 +5,9 @@ class SlurmJob(object):
     def __init__(self,
                  model_name,
                  python_file='/home/mila/q/qidong.yang/CP4GenerativeModel/main.py',
-                 data_path='/home/mila/q/qidong.yang/CP4GenerativeModel/data/', experiment_root='', time='96:00:00', **kwargs):
+                 data_path='/home/mila/q/qidong.yang/CP4GenerativeModel/data/', 
+                 experiment_root='', 
+                 time='96:00:00', **kwargs):
 
         self.time = time
         self.kwargs = kwargs

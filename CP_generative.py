@@ -63,6 +63,20 @@ def get_coverage_length_exact_1d(radius, centers):
     return coverage_length
 
 
+def get_volume_1d(means, covariances, weights, quant_score):
+
+    radius = [] 
+    k = len(means)
+
+    for i in range(k):
+        sigma = covariances[i][0] ** 0.5
+        radius.append(sigma * np.sqrt( max(0, 2*quant_score - np.log(2*np.pi) - 2*np.log(sigma/weights[i]))))
+
+    volume = get_coverage_length_exact_1d(radius, means)
+
+    return volume
+
+
 class CPGen:
     def __init__(self, args, k):
         self.args = args
@@ -85,5 +99,28 @@ class CPGen:
     def predict(self, Y_ens, Y):
         # Y_ens: (N_batch, N_ens, d)
         # Y: (N_batch, d)
-        pass
+        
+        d = Y.shape[1]
+
+        scores = []
+        volumes = []
+
+        for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
+            means, covariances, weights = fit_KMeans(y_ens, self.k)
+            s = score_fun_KMeans(y, means, covariances, weights)
+            scores.append(s)
+
+            if d == 1:
+                v = get_volume_1d(means, covariances, weights, self.quant_score)
+                volumes.append(v)
+            else:
+                
+
+        return np.array(scores), np.array(volumes)
+
+
+
+
+
+
             

@@ -10,9 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import PCP
-import KMean
 from dataset import *
 from flow_matching import *
+from CP_generative import *
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
@@ -70,107 +70,58 @@ def run(args):
     print('--------------------------------', flush=True)
     print(' ', flush=True)
 
+    #Select Conformal Prediction Method
+    if args.CP_type == 'PCP':
+        cp_method = CPGen(args, k=ens_size)
+        cp_method.fit(Y_ens_calib, Y_calib)
+        scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
 
-    #===========CP4Gen===========
-    k_hat_list = [1,2,3,4,5]
-    qt_list = []
-    coverage_list = []
-    volume_list = []
-    for i in tqdm(range(len(k_hat_list))):
-        k_hat = k_hat_list[i]
-        calib_scores = KMean.summary_score_KMeans(Y_ens_calib, Y_calib, k_hat=k_hat)
-        qt = np.quantile(calib_scores, args.coverage) 
-        test_scores, test_volumes = KMean.summary_inference_KMeans(Y_ens_test, Y_test, k_hat=k_hat, qt=qt)
+        print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+        print(f'Average k: {np.mean(ks):.6f}', flush=True)
+        print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
 
-        #Calculate statistics and save results
-        print(f'k_hat: {k_hat}')
-        print(f'Test Coverage Rate: {np.mean(test_scores < qt):.6f}')
-        print(f'Average Volume: {np.mean(test_volumes):.6f}')
-        qt_list.append(qt)
-        coverage_list.append(np.mean(test_scores < qt))
-        volume_list.append(np.mean(test_volumes))
+        np.save(os.path.join(args.output_saving_path, f'PCP_scores.npy'), scores)
+        np.save(os.path.join(args.output_saving_path, f'PCP_volumes.npy'), volumes)
+        np.save(os.path.join(args.output_saving_path, f'PCP_ks.npy'), ks)
+        np.save(os.path.join(args.output_saving_path, f'PCP_quant_score.npy'), np.array([cp_method.quant_score]))
 
-    idx = np.argmin(volume_list)
+    if args.CP_type == 'CP4Gen':
+        k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, ens_size]
 
-    print('CP4Gen:', flush=True)
-    print(f'k_hat: {k_hat_list[idx]}', flush=True)
-    print(f'Empirical coverage: {coverage_list[idx]:.6f}', flush=True)
-    print(f'Empirical efficiency: {volume_list[idx]:.6f}', flush=True)
+        for k in k_list:
+            cp_method = CPGen(args, k=k)
+            cp_method.fit(Y_ens_calib, Y_calib)
+            scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
 
-    print(' ', flush=True)
-    print('--------------------------------', flush=True)
-    print(' ', flush=True)
+            print(f'K: {k}', flush=True)
+            print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+            print(f'Average k: {np.mean(ks):.6f}', flush=True)
+            print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
+            print(' ', flush=True)
 
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_scores_{k}.npy'), scores)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_volumes_{k}.npy'), volumes)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_ks_{k}.npy'), ks)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_quant_score_{k}.npy'), np.array([cp_method.quant_score]))
 
-    #===========PCP-VCR===========
-    Y_hat = np.concatenate((Y_ens_calib, Y_ens_test), axis=0) # (n_batch, n_samples, dim_y)
-    Y_cal_test = np.concatenate((Y_calib, Y_test), axis=0).reshape(-1, 1, Y_ens_calib.shape[2]) # (n_batch, 1, dim_y)
-    # Ranking the samples by their average m-nearest neighbor distances, here we pick m=4.
-    # Compute pairwise distances between Y and Y_hat_ranked. Each row is a non-conformity score vector.
-    pcp_vcr = PCP.PCP_VCR(n_sample_K = args.n_samples,alpha=0.1,y_dim = Y_ens_calib.shape[2])
-    dist_matrix = pcp_vcr.compute_dist_matrix(Y_cal_test, Y_hat)
-    """
-    Y_hat_ranked = pcp_vcr.rank(Y_cal_test,Y_hat,k_neighbor = 4)
-    dist_matrix_rank = pcp_vcr.compute_dist_matrix(Y_cal_test,Y_hat_ranked)
-    # Approximate algorithm on calibration data: initialize different entries in range(n_sample), and select the approximated solution with the best approximated efficiency (sum of prediction regions, no consideration of overlap).
-    E_q_list = []
-    radius_list = []
-    for pos in tqdm(range(args.n_samples)):
-        E_q = pcp_vcr.calibrate(dist_matrix_rank[:len(Y_calib),:],num_iter = 300,position=pos)
-        radius = np.sum(E_q ** pcp_vcr.y_dim)
-        E_q_list.append(E_q)
-        radius_list.append(radius)
-    # Compute the empirical coverage and exact empirical efficiency (with consideration of overlap) on testing data.  
-    # get_coverage_length_overlap function is used to compute the exact efficiency of the coverage set, but this is only computable in 1-dim data. For higher dimensions, there is no analytical solution other than Monte Carlo. 
-    pcp_vcr_radius = E_q_list[np.argmin(radius_list)]
-    emp_coverage = pcp_vcr.empirical_coverage(dist_matrix_rank[len(Y_calib):,:],pcp_vcr_radius)
-    if Y_ens_calib.shape[2] == 1:
-        rank_pcp_exact_length = PCP.get_coverage_length_overlap(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
-    elif Y_ens_calib.shape[2] == 2:
-        rank_pcp_exact_length = PCP.get_coverage_area_overlap_grid(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
-    else:
-        rank_pcp_exact_length = PCP.get_coverage_area_overlap_MC(pcp_vcr_radius,Y_hat_ranked[len(Y_calib):])
+    if args.CP_type == 'CP4Gen_Adaptive':
+        w_thred_list = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
 
-    print('PCP-VCR:', flush=True)
-    print(f'Empirical coverage: {emp_coverage:.3f}', flush=True)
-    print(f'Empirical efficiency: {np.mean(rank_pcp_exact_length):.3f}', flush=True)
+        for w_thred in w_thred_list:
+            cp_method = CPGen_Adaptive(args, w_thred=w_thred)
+            cp_method.fit(Y_ens_calib, Y_calib)
+            scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
 
-    print(' ', flush=True)
-    print('--------------------------------', flush=True)
-    print(' ', flush=True)
-    """
+            print(f'Weight Threshold: {w_thred}', flush=True)
+            print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+            print(f'Average k: {np.mean(ks):.6f}', flush=True)
+            print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
+            print(' ', flush=True)
 
-    #===========PCP===========
-    pcp_radius = pcp_vcr.pcp_radius(dist_matrix[:len(Y_calib)])
-    pcp_coverage = pcp_vcr.empirical_coverage(dist_matrix[len(Y_calib):],pcp_radius)
-
-    if Y_ens_calib.shape[2] == 1:
-        pcp_exact_length = PCP.get_coverage_length_overlap(pcp_radius,Y_hat[len(Y_calib):])
-    else:
-        pcp_exact_length = PCP.get_coverage_area_overlap(pcp_radius,Y_hat[len(Y_calib):])
-
-    print('PCP:', flush=True)
-    print(f'Empirical coverage: {pcp_coverage:.6f}', flush=True)
-    print(f'Empirical efficiency: {np.mean(pcp_exact_length):.6f}', flush=True)
-
-    print(' ', flush=True)
-    print('--------------------------------', flush=True)
-    print(' ', flush=True)
-
-    #===========Save results===========
-    os.makedirs(os.path.join(args.output_saving_path, args.dataset), exist_ok=True)
-    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/k_hat_list.npy'), k_hat_list)
-    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_coverage.npy'), coverage_list)
-    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/KMeans_volume.npy'), volume_list)
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_coverage.npy'), pcp_coverage)
-    np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_volume.npy'), np.mean(pcp_exact_length))
-    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_coverage.npy'), emp_coverage)
-    # np.save(os.path.join(args.output_saving_path, f'{args.dataset}/PCP_VCR_volume.npy'), np.mean(rank_pcp_exact_length))
-
-
-
-
-
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_scores_{w_thred}.npy'), scores)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_volumes_{w_thred}.npy'), volumes)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_ks_{w_thred}.npy'), ks)
+            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_quant_score_{w_thred}.npy'), np.array([cp_method.quant_score]))
 
 
 if __name__ == '__main__':

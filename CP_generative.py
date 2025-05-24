@@ -44,39 +44,6 @@ def score_fun_KMeans(y, means, covariances, weights):
     return min(distances)
 
 
-def get_coverage_length_exact_1d(radius, centers):
-    # centers: (k, 1)
-    # radius: scalar or (k, 1)
-
-    n_sample = len(centers)
-    if isinstance(radius, float):
-        radius = [radius] * n_sample
-
-    I = []
-    for j in range(n_sample):
-        l = (centers[j] - radius[j])
-        u = (centers[j] + radius[j])
-        I.append([l, u])
-    
-    coverage_length = get_overlap_length(I)
-
-    return coverage_length
-
-
-def get_volume_1d(means, covariances, weights, quant_score):
-
-    radius = [] 
-    k = len(means)
-
-    for i in range(k):
-        sigma = covariances[i][0] ** 0.5
-        radius.append(sigma * np.sqrt( max(0, 2*quant_score - np.log(2*np.pi) - 2*np.log(sigma/weights[i]))))
-
-    volume = get_coverage_length_exact_1d(radius, means)
-
-    return volume
-
-
 class CPGen:
     def __init__(self, args, k):
         self.args = args
@@ -104,6 +71,7 @@ class CPGen:
 
         scores = []
         volumes = []
+        ks = []
 
         for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
             means, covariances, weights = fit_KMeans(y_ens, self.k)
@@ -112,11 +80,71 @@ class CPGen:
 
             if d == 1:
                 v = get_volume_1d(means, covariances, weights, self.quant_score)
-                volumes.append(v)
             else:
-                
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score)
+            
+            volumes.append(v)
+            ks.append(len(means))
 
-        return np.array(scores), np.array(volumes)
+        return np.array(scores), np.array(volumes), np.array(ks)
+
+
+class CPGen_Adaptive:
+    def __init__(self, args, w_thred):
+        self.args = args
+        self.w_thred = w_thred
+        self.coverage = args.coverage
+        self.max_k = args.max_k
+
+    def fit(self, Y_ens, Y):
+        # Y_ens: (N_batch, N_ens, d)
+        # Y: (N_batch, d)
+
+        scores = []
+        for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
+
+            bgmm = BayesianGaussianMixture(n_components=self.max_k, random_state=42)
+            bgmm.fit(y_ens)
+            ws = bgmm.weights_
+            k = max(1, np.sum(ws >= self.w_thred))
+
+            means, covariances, weights = fit_KMeans(y_ens, k)
+            s = score_fun_KMeans(y, means, covariances, weights)
+            scores.append(s)
+
+        scores = np.array(scores)
+        self.quant_score = np.quantile(scores, self.coverage)
+
+    def predict(self, Y_ens, Y):
+        # Y_ens: (N_batch, N_ens, d)
+        # Y: (N_batch, d)
+        
+        d = Y.shape[1]
+
+        scores = []
+        volumes = []
+        ks = []
+
+        for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
+
+            bgmm = BayesianGaussianMixture(n_components=self.max_k, random_state=42)
+            bgmm.fit(y_ens)
+            ws = bgmm.weights_
+            k = max(1, np.sum(ws >= self.w_thred))
+
+            means, covariances, weights = fit_KMeans(y_ens, k)
+            s = score_fun_KMeans(y, means, covariances, weights)
+            scores.append(s)
+
+            if d == 1:
+                v = get_volume_1d(means, covariances, weights, self.quant_score)
+            else:
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score)
+            
+            volumes.append(v)
+            ks.append(k)
+
+        return np.array(scores), np.array(volumes), np.array(ks)
 
 
 

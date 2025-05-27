@@ -33,11 +33,11 @@ def run(args):
     # Get data set
     if args.dataset not in togo_list:
 
-        if os.path.exists(os.path.join(args.generative_model_path, f'model.pth')):
-            Y_ens_calib = np.load(os.path.join(args.generative_model_path, f'Y_ens_calib.npy'))
-            Y_calib = np.load(os.path.join(args.generative_model_path, f'Y_calib.npy'))
-            Y_ens_test = np.load(os.path.join(args.generative_model_path, f'Y_ens_test.npy'))
-            Y_test = np.load(os.path.join(args.generative_model_path, f'Y_test.npy'))        
+        if os.path.exists(os.path.join(args.model_path, f'model.pth')):
+            Y_ens_calib = np.load(os.path.join(args.model_path, f'Y_ens_calib.npy'))
+            Y_calib = np.load(os.path.join(args.model_path, f'Y_calib.npy'))
+            Y_ens_test = np.load(os.path.join(args.model_path, f'Y_ens_test.npy'))
+            Y_test = np.load(os.path.join(args.model_path, f'Y_test.npy'))        
         else:
             generative_model = GenerativeModel(args)
             generative_model.prep_data()
@@ -46,12 +46,12 @@ def run(args):
             Y_calib, Y_test = generative_model.get_ground_truth()
             generative_model.save()
 
-            np.save(os.path.join(args.generative_model_path, f'Y_ens_calib.npy'), Y_ens_calib)
-            np.save(os.path.join(args.generative_model_path, f'Y_calib.npy'), Y_calib)
-            np.save(os.path.join(args.generative_model_path, f'Y_ens_test.npy'), Y_ens_test)
-            np.save(os.path.join(args.generative_model_path, f'Y_test.npy'), Y_test)
-            np.save(os.path.join(args.generative_model_path, f'calib_conditions.npy'), calib_conditions)
-            np.save(os.path.join(args.generative_model_path, f'test_conditions.npy'), test_conditions)
+            np.save(os.path.join(args.model_path, f'Y_ens_calib.npy'), Y_ens_calib)
+            np.save(os.path.join(args.model_path, f'Y_calib.npy'), Y_calib)
+            np.save(os.path.join(args.model_path, f'Y_ens_test.npy'), Y_ens_test)
+            np.save(os.path.join(args.model_path, f'Y_test.npy'), Y_test)
+            np.save(os.path.join(args.model_path, f'calib_conditions.npy'), calib_conditions)
+            np.save(os.path.join(args.model_path, f'test_conditions.npy'), test_conditions)
 
     else:
         Y_ens_calib, Y_calib, Y_ens_test, Y_test = get_togo_dataset(args.dataset, data_path=args.data_path)
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='s_curve', type=str)  # dataset name
     parser.add_argument('--data_path', default='./data/', type=str)  # dataset path
     parser.add_argument('--output_saving_path', default='./output/', type=str)  # output saving path
-    parser.add_argument('--generative_model_path', default='./generative_models/', type=str)  # generative model path
+    parser.add_argument('--model_path', default='./generative_models/', type=str)  # generative model path
 
     # Training parameters
     parser.add_argument('--model_type', type=str, default='flow-matching')
@@ -161,11 +161,11 @@ if __name__ == '__main__':
         }
 
     model_params = args.model_type + ''.join([f'--{k}={v}' for k, v in model_params.items()])
-    args.generative_model_path = os.path.join(args.generative_model_path, model_params)
-    args.generative_model_path = os.path.join(args.generative_model_path, args.dataset)
+    args.model_path = os.path.join(args.model_path, model_params)
+    args.model_path = os.path.join(args.model_path, args.dataset)
 
-    if not os.path.exists(args.generative_model_path):
-        os.system(f'mkdir -p {args.generative_model_path}')
+    if not os.path.exists(args.model_path):
+        os.system(f'mkdir -p {args.model_path}')
 
     # Print configuration
     print('Experiment Configuration:', flush=True)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     print(f'dataset: {args.dataset}', flush=True)
     print(f'data_path: {args.data_path}', flush=True)
     print(f'output_saving_path: {args.output_saving_path}', flush=True)
-    print(f'generative_model_path: {args.generative_model_path}', flush=True)
+    print(f'model_path: {args.model_path}', flush=True)
     print(f'model_type: {args.model_type}', flush=True)
     print(f'n_epochs: {args.n_epochs}', flush=True)
     print(f'batch_size: {args.batch_size}', flush=True)

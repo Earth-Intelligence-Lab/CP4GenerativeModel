@@ -3,7 +3,7 @@ import os
 
 class SlurmJob(object):
     def __init__(self,
-                 model_name,
+                 model_type,
                  python_file='/home/mila/q/qidong.yang/CP4GenerativeModel/main.py',
                  data_path='/home/mila/q/qidong.yang/CP4GenerativeModel/data/', 
                  experiment_root='', 
@@ -14,7 +14,7 @@ class SlurmJob(object):
 
         self.python_file = python_file
         self.data_path = data_path
-        self.job_name = model_name + ''.join([f'--{k}={v}' for k, v in self.kwargs.items()])
+        self.job_name = model_type + ''.join([f'--{k}={v}' for k, v in self.kwargs.items()])
         self.job_name = self.job_name.replace('(', '_')
         self.job_name = self.job_name.replace(')', '_')
         self.job_name = self.job_name.replace('[', '_')
@@ -37,7 +37,7 @@ class SlurmJob(object):
     @property
     def args(self):
 
-        args = []
+        args = [f'--model_type {self.model_type}']
         for k, v in self.kwargs.items():
             if isinstance(v, tuple):
                 arg_str = f'--{k} ' + ' '.join([str(i) for i in v])
@@ -56,23 +56,30 @@ class SlurmJob(object):
     @property
     def command(self):
 
-        part_1 = 'python '
-        part_2 = self.python_file + self.args + f' --data_path={self.data_path}'
-        part_3 = ' ' + f'--output_saving_path={self.output_path}'
+        part_1 = 'python -u '
+        part_2 = self.python_file + self.args 
+        part_3 = ' ' + f'--data_path={self.data_path}'
+        part_4 = ' ' + f'--output_saving_path={self.output_path}'
+        part_5 = ' ' + f'--model_path={self.model_path}'
 
-        return part_1 + part_2 + part_3
+        return part_1 + part_2 + part_3 + part_4 + part_5
 
     @property
     def setup(self):
 
         lines = [
-            'echo "starting job $SLURM_JOB_ID"',
-            'module unload python',
-            'module load anaconda/3',
-            'conda activate obs_correction_torch_gpu',
+            'singularity exec --overlay /scratch/qy707/torch_env/my_torch.ext3:ro ',
+            '/scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif ',
+            '/bin/bash -c "source /ext3/env.sh; ',
+            self.command + '"'
         ]
 
-        return lines
+        L = ''
+
+        for line in lines:
+            L = L + line
+
+        return L
 
     @property
     def lines(self):
@@ -82,15 +89,14 @@ class SlurmJob(object):
             f'#SBATCH --job-name={self.job_name}',
             f'#SBATCH --output={self.slurm_report_path + self.slurm_output_filename}',
             f'#SBATCH --error={self.slurm_report_path + self.slurm_error_filename}',
-            '#SBATCH --ntasks=1',
+            '#SBATCH --nodes=1',
             f'#SBATCH --time={self.time}',
             '#SBATCH --cpus-per-task=4',
             '#SBATCH --mem=15Gb',
        #     f'#SBATCH --gres=gpu:rtx8000:1',
-            '#SBATCH --partition=long',
         ]
 
-        lines = lines + [''] + self.setup + ['', self.command]
+        lines = lines + ['', 'module purge', '', self.setup]
 
         return lines
 
@@ -113,19 +119,27 @@ class SlurmJob(object):
 
 def synthetic_data_job():
 
-    model_name = 'synthetic_data'
-    experiment_root = f'/home/mila/q/qidong.yang/scratch/CP4Gen/{model_name}'
+    model_type = 'flow-matching'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
 
     # datasets = ['s_curve']
-    datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
-    epochs = [2000, 5000, 10000, 20000, 50000]
-    samples = [30]
+    # datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
+    # epochs = [20000]
+    
+    job = SlurmJob(
+                model_type=model_type, 
+                experiment_root=experiment_root, 
+                python_file=python_file, 
+                data_path=data_path, 
+                model_path=model_path, 
+                dataset='s_curve', 
+                n_epochs=20000, 
+                n_ens=30)
 
-    for dataset in datasets:
-        for epoch in epochs:
-            for sample in samples:
-                job = SlurmJob(model_name=model_name, experiment_root=experiment_root, dataset=dataset, n_epochs=epoch, n_samples=sample)
-                job.launch()
+    job.launch()
 
 
 if __name__ == '__main__':

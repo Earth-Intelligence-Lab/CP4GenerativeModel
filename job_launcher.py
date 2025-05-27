@@ -4,16 +4,18 @@ import os
 class SlurmJob(object):
     def __init__(self,
                  model_type,
-                 python_file='/home/mila/q/qidong.yang/CP4GenerativeModel/main.py',
-                 data_path='/home/mila/q/qidong.yang/CP4GenerativeModel/data/', 
-                 experiment_root='', 
-                 time='96:00:00', **kwargs):
+                 python_file,
+                 data_path,
+                 model_path,
+                 experiment_root, 
+                 time='2:00:00', **kwargs):
 
         self.time = time
         self.kwargs = kwargs
-
+        self.model_type = model_type
         self.python_file = python_file
         self.data_path = data_path
+        self.model_path = model_path
         self.job_name = model_type + ''.join([f'--{k}={v}' for k, v in self.kwargs.items()])
         self.job_name = self.job_name.replace('(', '_')
         self.job_name = self.job_name.replace(')', '_')
@@ -68,7 +70,7 @@ class SlurmJob(object):
     def setup(self):
 
         lines = [
-            'singularity exec --overlay /scratch/qy707/torch_env/my_torch.ext3:ro ',
+            'singularity exec --overlay /scratch/qy707/wind_obs_env/wind_obs_env.ext3:ro ',
             '/scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif ',
             '/bin/bash -c "source /ext3/env.sh; ',
             self.command + '"'

@@ -87,11 +87,11 @@ class GenerativeModel:
         return Y_calib, Y_test
 
     def save(self):
-        filename = os.path.join(self.args.generative_model_path, f'model.pth')
+        filename = os.path.join(self.args.model_path, f'model.pth')
         torch.save(self.model.state_dict(), filename)
 
     def load(self):
-        filename = os.path.join(self.args.generative_model_path, f'model.pth')
+        filename = os.path.join(self.args.model_path, f'model.pth')
         self.model.load_state_dict(torch.load(filename))
 
 

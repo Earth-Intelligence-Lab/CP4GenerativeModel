@@ -20,7 +20,7 @@ def fit_KMeans(y_ens, k, eps=1e-6):
       kmeans = KMeans(n_clusters=k, n_init='auto', random_state=0).fit(y_ens)
       means = kmeans.cluster_centers_
       weights = [np.mean(kmeans.labels_ == i) for i in range(k)]
-      covariances = [np.cov(Y_ens[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(Y_ens) > 1 else eps * np.eye(d) for i in range(k)]
+      covariances = [np.cov(y_ens[kmeans.labels_ == i].T) + eps * np.eye(d) if weights[i] * len(y_ens) > 1 else eps * np.eye(d) for i in range(k)]
     
     if len(y_ens) == k:
     # every ensemble member is a cluster

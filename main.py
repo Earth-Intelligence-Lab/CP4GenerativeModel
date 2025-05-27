@@ -13,6 +13,7 @@ import PCP
 from dataset import *
 from flow_matching import *
 from CP_generative import *
+from generative_models import *
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 

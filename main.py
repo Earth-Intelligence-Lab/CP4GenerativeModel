@@ -106,7 +106,7 @@ def run(args):
             np.save(os.path.join(args.output_saving_path, f'CP4Gen_quant_score_{k}.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'CP4Gen_Adaptive':
-        w_thred_list = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+        w_thred_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6]
 
         for w_thred in w_thred_list:
             cp_method = CPGen_Adaptive(args, w_thred=w_thred)

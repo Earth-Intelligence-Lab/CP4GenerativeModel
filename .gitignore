@@ -183,4 +183,4 @@ test_main.py
 KMeans_optK.py
 
 # Jupyter Notebook
-*.ipynb
+# *.ipynb

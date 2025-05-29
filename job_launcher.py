@@ -130,18 +130,31 @@ def synthetic_data_job():
     # datasets = ['s_curve']
     # datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
     # epochs = [20000]
-    
-    job = SlurmJob(
-                model_type=model_type, 
-                experiment_root=experiment_root, 
-                python_file=python_file, 
-                data_path=data_path, 
-                model_path=model_path, 
-                dataset='s_curve', 
-                n_epochs=20000, 
-                n_ens=30)
 
-    job.launch()
+    configs = {
+            '25-Gaussians':50000,
+            '8-Gaussians':50000,
+            'moon':10000,
+            'circle':20000,
+            'spiral':2000,
+            's_curve':20000,
+            }
+
+    for dataset, n_epochs in configs.items():
+        for n_ens in [30, 50, 100, 200, 300]:
+    
+            job = SlurmJob(
+                    model_type=model_type, 
+                    experiment_root=experiment_root, 
+                    python_file=python_file, 
+                    data_path=data_path, 
+                    model_path=model_path, 
+                    dataset=dataset, 
+                    n_epochs=n_epochs,
+                    CP_type='CP4Gen_Adaptive',
+                    n_ens=n_ens)
+
+            job.launch()
 
 
 if __name__ == '__main__':

@@ -157,6 +157,46 @@ def synthetic_data_job():
             job.launch()
 
 
+def synthetic_data_epoch_job():
+
+    model_type = 'flow-matching'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    datasets = ['s_curve', 'spiral', 'circle', 'moon', '25-Gaussians', '8-Gaussians']
+    epochs = [2000, 5000, 10000, 20000, 50000]
+
+    configs = {
+            '25-Gaussians':50000,
+            '8-Gaussians':50000,
+            'moon':10000,
+            'circle':20000,
+            'spiral':2000,
+            's_curve':20000,
+            }
+
+    for dataset in datasets:
+        for epoch in epochs:
+            for n_ens in [30]:
+
+                job = SlurmJob(
+                        model_type=model_type,
+                        experiment_root=experiment_root,
+                        python_file=python_file,
+                        data_path=data_path,
+                        model_path=model_path,
+                        dataset=dataset,
+                        n_epochs=epoch,
+                        n_ens=n_ens)
+
+                if epoch != configs[dataset]:
+                    job.launch()
+                else:
+                    pass
+
+
 if __name__ == '__main__':
 
-    synthetic_data_job()
+    synthetic_data_epoch_job()

@@ -106,23 +106,21 @@ def run(args):
             np.save(os.path.join(args.output_saving_path, f'CP4Gen_quant_score_{k}.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'CP4Gen_Adaptive':
-        w_thred_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6]
+        cp_method = CPGen_Adaptive(args)
+        cp_method.fit(Y_ens_calib, Y_calib)
+        scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
 
-        for w_thred in w_thred_list:
-            cp_method = CPGen_Adaptive(args, w_thred=w_thred)
-            cp_method.fit(Y_ens_calib, Y_calib)
-            scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
+        print(f'K_max: {args.max_k}', flush=True)
+        print(f'K_method: {args.k_method}', flush=True)
+        print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+        print(f'Average k: {np.mean(ks):.6f}', flush=True)
+        print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
+        print(' ', flush=True)
 
-            print(f'Weight Threshold: {w_thred}', flush=True)
-            print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
-            print(f'Average k: {np.mean(ks):.6f}', flush=True)
-            print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
-            print(' ', flush=True)
-
-            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_scores_{w_thred}.npy'), scores)
-            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_volumes_{w_thred}.npy'), volumes)
-            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_ks_{w_thred}.npy'), ks)
-            np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_quant_score_{w_thred}.npy'), np.array([cp_method.quant_score]))
+        np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_scores_{args.max_k}_{args.k_method}.npy'), scores)
+        np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_volumes_{args.max_k}_{args.k_method}.npy'), volumes)
+        np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_ks_{args.max_k}_{args.k_method}.npy'), ks)
+        np.save(os.path.join(args.output_saving_path, f'CP4Gen_Adaptive_quant_score_{args.max_k}_{args.k_method}.npy'), np.array([cp_method.quant_score]))
 
 
 if __name__ == '__main__':
@@ -147,7 +145,8 @@ if __name__ == '__main__':
     parser.add_argument('--CP_type', type=str, default='PCP')
     parser.add_argument('--n_ens', type=int, default=30)
     parser.add_argument('--coverage', type=float, default=0.9)
-    parser.add_argument('--max_k', type=int, default=10)
+    parser.add_argument('--max_k', type=int, default=5)
+    parser.add_argument('--k_method', type=str, default='BIC')
 
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -186,6 +185,7 @@ if __name__ == '__main__':
     print(f'n_ens: {args.n_ens}', flush=True)
     print(f'coverage: {args.coverage}', flush=True)
     print(f'max_k: {args.max_k}', flush=True)
+    print(f'k_method: {args.k_method}', flush=True)
 
     # Run the experiment
     run(args)

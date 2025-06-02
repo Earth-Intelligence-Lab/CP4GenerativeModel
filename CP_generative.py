@@ -9,6 +9,32 @@ from sklearn.mixture import BayesianGaussianMixture
 from utility import *
 
 
+def find_k(y_ens, max_k, method='BIC', **kwargs):
+    # y_ens: (N_ens, d)
+    # max_k: scalar, maximum number of clusters
+    # method: string, method to find the number of clusters
+    # **kwargs: additional arguments
+
+    if method == 'BIC':
+        # Bayesian Information Criterion
+        bics = []
+        for k in range(1, max_k + 1):
+            gmm = GaussianMixture(n_components=k, covariance_type='full', random_state=0)
+            gmm.fit(y_ens)
+            bics.append(gmm.bic(y_ens))
+
+        return np.argmin(bics) + 1
+
+    if method == 'BGMM':
+        # Bayesian Gaussian Mixture Model
+        bgmm = BayesianGaussianMixture(n_components=max_k, random_state=42)
+        bgmm.fit(y_ens)
+        ws = bgmm.weights_
+        k = max(1, np.sum(ws >= kwargs['w_thred']))
+
+        return k
+
+
 def fit_KMeans(y_ens, k, eps=1e-6):
     # y_ens: (N_ens, d)
     # k: scalar, number of clusters in k-NN
@@ -90,11 +116,12 @@ class CPGen:
 
 
 class CPGen_Adaptive:
-    def __init__(self, args, w_thred):
+    def __init__(self, args, **kwargs):
         self.args = args
-        self.w_thred = w_thred
         self.coverage = args.coverage
         self.max_k = args.max_k
+        self.k_method = args.k_method
+        self.kwargs = kwargs
 
     def fit(self, Y_ens, Y):
         # Y_ens: (N_batch, N_ens, d)
@@ -103,11 +130,7 @@ class CPGen_Adaptive:
         scores = []
         for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
 
-            bgmm = BayesianGaussianMixture(n_components=self.max_k, random_state=42)
-            bgmm.fit(y_ens)
-            ws = bgmm.weights_
-            k = max(1, np.sum(ws >= self.w_thred))
-
+            k = find_k(y_ens, self.max_k, method=self.k_method, **self.kwargs)
             means, covariances, weights = fit_KMeans(y_ens, k)
             s = score_fun_KMeans(y, means, covariances, weights)
             scores.append(s)
@@ -127,11 +150,7 @@ class CPGen_Adaptive:
 
         for idx, (y_ens, y) in enumerate(zip(Y_ens, Y)):
 
-            bgmm = BayesianGaussianMixture(n_components=self.max_k, random_state=42)
-            bgmm.fit(y_ens)
-            ws = bgmm.weights_
-            k = max(1, np.sum(ws >= self.w_thred))
-
+            k = find_k(y_ens, self.max_k, method=self.k_method, **self.kwargs)
             means, covariances, weights = fit_KMeans(y_ens, k)
             s = score_fun_KMeans(y, means, covariances, weights)
             scores.append(s)

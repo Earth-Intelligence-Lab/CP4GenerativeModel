@@ -179,7 +179,7 @@ def synthetic_data_epoch_job():
 
     for dataset in datasets:
         for epoch in epochs:
-            for n_ens in [30]:
+            for n_ens in [30, 50, 100, 200, 300]:
 
                 job = SlurmJob(
                         model_type=model_type,
@@ -189,9 +189,11 @@ def synthetic_data_epoch_job():
                         model_path=model_path,
                         dataset=dataset,
                         n_epochs=epoch,
+                        CP_type='CP4Gen_Adaptive',
+                        k_method='BIC',
                         n_ens=n_ens)
 
-                if epoch != configs[dataset]:
+                if epoch == configs[dataset]:
                     job.launch()
                 else:
                     pass

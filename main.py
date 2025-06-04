@@ -87,7 +87,11 @@ def run(args):
         np.save(os.path.join(args.output_saving_path, f'PCP_quant_score.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'CP4Gen':
-        k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, ens_size]
+        # Reduce computing overhead searching less ks
+        if Y_ens_calib.shape[-1] >= 3:
+            k_list = [1, 2, 3, 4, 5, ens_size]
+        else:
+            k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, ens_size]
 
         for k in k_list:
             cp_method = CPGen(args, k=k)

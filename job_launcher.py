@@ -8,7 +8,7 @@ class SlurmJob(object):
                  data_path,
                  model_path,
                  experiment_root, 
-                 time='2:00:00', **kwargs):
+                 time='96:00:00', **kwargs):
 
         self.time = time
         self.kwargs = kwargs
@@ -94,7 +94,7 @@ class SlurmJob(object):
             '#SBATCH --nodes=1',
             f'#SBATCH --time={self.time}',
             '#SBATCH --cpus-per-task=4',
-            '#SBATCH --mem=15Gb',
+            '#SBATCH --mem=50Gb',
        #     f'#SBATCH --gres=gpu:rtx8000:1',
         ]
 
@@ -206,7 +206,7 @@ def Mengze_data_job():
     data_path = '/home/qy707/CP4GenerativeModel/data/'
     model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
 
-    datasets = ['Mengze_2', 'Mengze_nearest', 'Mengze_3', 'Mengze_4']
+    datasets = ['Mengze_3', 'Mengze_4']
     CP_types = ['PCP', 'CP4Gen']
 
     for dataset in datasets:

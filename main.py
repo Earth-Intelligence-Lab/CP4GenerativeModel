@@ -152,7 +152,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-    if args.model_type == 'flow-matching':
+    if args.model_type in ['flow-matching', 'diffusion']:
         model_params = {
             'n_epochs': args.n_epochs,
             'batch_size': args.batch_size,

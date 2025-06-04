@@ -198,6 +198,34 @@ def synthetic_data_epoch_job():
                     pass
 
 
+def Mengze_data_job():
+
+    model_type = 'diffusion'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    datasets = ['Mengze_2', 'Mengze_nearest', 'Mengze_3', 'Mengze_4']
+    CP_types = ['PCP', 'CP4Gen']
+
+    for dataset in datasets:
+        for CP_type in CP_types:
+            for n_ens in [30]:
+
+                job = SlurmJob(
+                        model_type=model_type,
+                        experiment_root=experiment_root,
+                        python_file=python_file,
+                        data_path=data_path,
+                        model_path=model_path,
+                        dataset=dataset,
+                        CP_type=CP_type,
+                        n_ens=n_ens)
+
+                job.launch()
+
+
 if __name__ == '__main__':
 
-    synthetic_data_epoch_job()
+    Mengze_data_job()

@@ -200,13 +200,13 @@ def synthetic_data_epoch_job():
 
 def Mengze_data_job():
 
-    model_type = 'diffusion'
+    model_type = 'diffusion_sparse'
     experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
     python_file = '/home/qy707/CP4GenerativeModel/main.py'
     data_path = '/home/qy707/CP4GenerativeModel/data/'
     model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
 
-    datasets = ['Mengze_3', 'Mengze_4']
+    datasets = ['Mengze_4']
     CP_types = ['PCP', 'CP4Gen']
 
     for dataset in datasets:

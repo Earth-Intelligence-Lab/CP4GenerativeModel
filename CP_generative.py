@@ -138,17 +138,17 @@ class CPGen_Adaptive:
 
             if d == 1:
                 v = get_volume_1d(means, covariances, weights, self.quant_score)
-            else:
+
+            if d == 2:
                 v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score)
-            
+
+            if d == 3:
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=100000)
+
+            if d == 4:
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=100000)
+
             volumes.append(v)
             ks.append(k)
 
         return np.array(scores), np.array(volumes), np.array(ks)
-
-
-
-
-
-
-            

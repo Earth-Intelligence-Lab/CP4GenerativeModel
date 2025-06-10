@@ -80,8 +80,12 @@ class CPGen:
 
             if d == 1:
                 v = get_volume_1d(means, covariances, weights, self.quant_score)
-            else:
+
+            if d in [2, 3]:
                 v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score)
+
+            if d == 4:
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=500000)
             
             volumes.append(v)
             ks.append(len(means))
@@ -146,7 +150,7 @@ class CPGen_Adaptive:
                 v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=100000)
 
             if d == 4:
-                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=100000)
+                v = get_volume_nd(y_ens, means, covariances, weights, self.quant_score, M=500000)
 
             volumes.append(v)
             ks.append(k)

@@ -378,9 +378,9 @@ def get_dataset(name, data_path=None, seed=0):
         # # # now can drop weather and season.
         df.drop(['season', 'weather'], inplace=True, axis=1)
 
-        df["hour"] = [t.hour for t in pd.DatetimeIndex(df.datetime)]
-        df["day"] = [t.dayofweek for t in pd.DatetimeIndex(df.datetime)]
-        df["month"] = [t.month for t in pd.DatetimeIndex(df.datetime)]
+        df['hour'] = [t.hour for t in pd.DatetimeIndex(df.datetime)]
+        df['day'] = [t.dayofweek for t in pd.DatetimeIndex(df.datetime)]
+        df['month'] = [t.month for t in pd.DatetimeIndex(df.datetime)]
         df['year'] = [t.year for t in pd.DatetimeIndex(df.datetime)]
         df['year'] = df['year'].map({2011: 0, 2012: 1})
 
@@ -394,5 +394,33 @@ def get_dataset(name, data_path=None, seed=0):
 
         X = df.drop('count', axis=1).values.reshape(N, -1)[idx]
         Y = df[['count']].values.reshape(N, -1)[idx]
+
+    if name == "taxi":
+        df = pd.read_csv(data_path + 'taxi_data.csv')
+
+        N = len(df)
+        # Shuffle dataset
+        idx = np.arange(N)
+        np.random.shuffle(idx)
+
+        X_cols = ['pickup_time_day_of_week_sin', 'pickup_time_day_of_week_cos', 'pickup_time_of_day_sin', 'pickup_time_of_day_cos','pickup_loc_lat','pickup_loc_lon']
+        Y_cols = ['dropoff_loc_lat', 'dropoff_loc_lon']
+
+        X = df[X_cols].values.reshape(N, -1)[idx]
+        Y = df[Y_cols].values.reshape(N, -1)[idx]
+
+    if name == "energy":
+        df = pd.read_csv(data_path + 'energy_data.csv')
+
+        N = len(df)
+        # Shuffle dataset
+        idx = np.arange(N)
+        np.random.shuffle(idx)
+
+        X_cols = ['X1','X2','X3','X4','X5','X6','X7','X8']
+        Y_cols = ['Y1', 'Y2']
+
+        X = df[X_cols].values.reshape(N, -1)[idx]
+        Y = df[Y_cols].values.reshape(N, -1)[idx]
 
     return X, Y

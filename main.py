@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import PCP
 from dataset import *
+from utility import *
 from flow_matching import *
 from CP_generative import *
 from generative_models import *
@@ -87,11 +88,8 @@ def run(args):
         np.save(os.path.join(args.output_saving_path, f'PCP_quant_score.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'CP4Gen':
-        # Reduce computing overhead searching less ks
-        if Y_ens_calib.shape[-1] >= 3:
-            k_list = [1, 2, 3, 4, 5, ens_size]
-        else:
-            k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, ens_size]
+        d = Y_ens_calib.shape[-1]
+        k_list = get_k_list(ens_size, d)
 
         for k in k_list:
             cp_method = CPGen(args, k=k)
@@ -145,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_dim', type=int, default=128)
     parser.add_argument('--timesteps', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--n_samples', type=int, default=300)
+    parser.add_argument('--n_samples', type=int, default=1000)
 
     # CP parameters
     parser.add_argument('--CP_type', type=str, default='PCP')

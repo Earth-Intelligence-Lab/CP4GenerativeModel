@@ -101,3 +101,17 @@ def get_volume_nd(y_ens, means, covariances, weights, quant_score, grid_res=100,
         volume = np.mean(dens_new) * np.prod(np.array(higher_bound) - np.array(lower_bound))
 
     return volume
+
+
+def get_k_list(ens_size, d):
+    # Reduce computing overhead searching less ks
+    if (d >= 3) or (ens_size == 10):
+        k_list = [1, 2, 3, 4, 5, ens_size]
+    else:
+        k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+    if k_list[-1] == ens_size:
+        return k_list
+    else:
+        return k_list + list(range(10 + 5, ens_size//2 + 5, 5)) + [ens_size]
+

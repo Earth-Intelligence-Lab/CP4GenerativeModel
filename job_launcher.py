@@ -226,6 +226,93 @@ def Mengze_data_job():
                 job.launch()
 
 
+def real_data_epoch_job():
+
+    model_type = 'flow-matching'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    datasets = ['meps_19', 'meps_20', 'meps_21', 'facebook_1', 'facebook_2', 'bio', 'blog_data', 'temperature', 'bike', 'taxi', 'energy']
+    epochs = [500, 1000, 2000, 5000, 10000, 20000, 50000]
+
+    for dataset in datasets:
+        for epoch in epochs:
+            for n_ens in [30]:
+
+                job = SlurmJob(
+                        model_type=model_type,
+                        experiment_root=experiment_root,
+                        python_file=python_file,
+                        data_path=data_path,
+                        model_path=model_path,
+                        dataset=dataset,
+                        n_epochs=epoch,
+                        CP_type='CP4Gen',
+                        batch_size=256,
+                        n_ens=n_ens)
+
+                job.launch()
+
+
+def synthetic_ens_job():
+
+    model_type = 'flow-matching'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    configs = {'25-Gaussians':50000}
+
+    for dataset, epoch in configs.items():
+        for n_ens in [50, 100]:
+
+            job = SlurmJob(
+                    model_type=model_type,
+                    experiment_root=experiment_root,
+                    python_file=python_file,
+                    data_path=data_path,
+                    model_path=model_path,
+                    dataset=dataset,
+                    n_epochs=epoch,
+                    CP_type='CP4Gen',
+                    n_ens=n_ens)
+
+            job.launch()
+
+
+def real_ens_job():
+
+    model_type = 'flow-matching'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    configs = {
+            'bio': 1000,
+            }
+
+    for dataset, epoch in configs.items():
+        for n_ens in [10, 20, 40, 50, 60, 70, 80, 90, 100]:
+
+            job = SlurmJob(
+                    model_type=model_type,
+                    experiment_root=experiment_root,
+                    python_file=python_file,
+                    data_path=data_path,
+                    model_path=model_path,
+                    dataset=dataset,
+                    n_epochs=epoch,
+                    CP_type='CP4Gen',
+                    batch_size=256,
+                    n_ens=n_ens)
+
+            job.launch()
+
+
 if __name__ == '__main__':
 
-    Mengze_data_job()
+    real_ens_job()

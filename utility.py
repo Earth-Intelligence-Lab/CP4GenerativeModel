@@ -105,7 +105,7 @@ def get_volume_nd(y_ens, means, covariances, weights, quant_score, grid_res=100,
 
 def get_k_list(ens_size, d):
     # Reduce computing overhead searching less ks
-    if (d >= 3) or (ens_size == 10):
+    if (d >= 3) or (ens_size <= 10):
         k_list = [1, 2, 3, 4, 5, ens_size]
     else:
         k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

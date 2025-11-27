@@ -125,6 +125,38 @@ def run(args):
             np.save(os.path.join(args.output_saving_path, f'HD-PCP_ks_{keep_rate}.npy'), ks)
             np.save(os.path.join(args.output_saving_path, f'HD-PCP_quant_score_{keep_rate}.npy'), np.array([cp_method.quant_score]))
 
+    if args.CP_type == 'HD-CP4Gen':
+        ens_size_keep = configurations.top_k_dict[args.dataset]
+
+        # Select sample with top scores
+        topk_idx_calib = np.argsort(calib_scores.squeeze(-1), axis=1)[:, -ens_size_keep:]
+        topk_idx_test = np.argsort(test_scores.squeeze(-1), axis=1)[:, -ens_size_keep:]
+
+        N_calib = Y_ens_calib.shape[0]
+        N_test = Y_ens_test.shape[0]
+
+        Y_ens_calib = Y_ens_calib[np.arange(N_calib)[:, None], topk_idx_calib, :]
+        Y_ens_test = Y_ens_test[np.arange(N_test)[:, None], topk_idx_test, :]
+
+        d = Y_ens_calib.shape[-1]
+        k_list = get_k_list(ens_size_keep, d)
+
+        for k in k_list:
+            cp_method = CPGen(args, k=k)
+            cp_method.fit(Y_ens_calib, Y_calib)
+            scores, volumes, ks = cp_method.predict(Y_ens_test, Y_test)
+
+            print(f'K: {k}', flush=True)
+            print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+            print(f'Average k: {np.mean(ks):.6f}', flush=True)
+            print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
+            print(' ', flush=True)
+
+            np.save(os.path.join(args.output_saving_path, f'HD-CP4Gen_scores_{k}.npy'), scores)
+            np.save(os.path.join(args.output_saving_path, f'HD-CP4Gen_volumes_{k}.npy'), volumes)
+            np.save(os.path.join(args.output_saving_path, f'HD-CP4Gen_ks_{k}.npy'), ks)
+            np.save(os.path.join(args.output_saving_path, f'HD-CP4Gen_quant_score_{k}.npy'), np.array([cp_method.quant_score]))
+
     if args.CP_type == 'CP4Gen':
         d = Y_ens_calib.shape[-1]
         k_list = get_k_list(ens_size, d)

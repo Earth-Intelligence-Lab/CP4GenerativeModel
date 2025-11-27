@@ -19,7 +19,7 @@ class GenerativeModel:
         
         self.X, self.Y = get_dataset(self.args.dataset, data_path=self.args.data_path)
 
-        if self.model_type == 'flow-matching':
+        if self.model_type == 'flow-matching-HD':
             self.model = flow_matching.FlowMatchingNet(input_dim=self.Y.shape[1], condition_dim=self.X.shape[1], hidden_dim=self.args.hidden_dim).to(self.args.device)
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
 
@@ -60,11 +60,11 @@ class GenerativeModel:
         self.test_loader = DataLoader(test_dataset, batch_size=self.args.batch_size, shuffle=False)
     
     def train(self):
-        if self.model_type == 'flow-matching':
+        if self.model_type == 'flow-matching-HD':
             flow_matching.train_flow_matching(self.model, self.gaussian_path, self.train_loader, self.optimizer, self.args.n_epochs, self.args.device)
 
     def sample(self):
-        if self.model_type == 'flow-matching':
+        if self.model_type == 'flow-matching-HD':
             calib_samples, calib_scores, calib_conditions  = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.calib_loader, self.args.n_samples, self.args.timesteps, self.args.device)
             test_samples, test_scores, test_conditions = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.test_loader, self.args.n_samples, self.args.timesteps, self.args.device)
 

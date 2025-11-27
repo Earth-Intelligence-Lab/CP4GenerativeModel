@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import PCP
+import configurations
 from dataset import *
 from utility import *
 from flow_matching import *
@@ -97,7 +98,7 @@ def run(args):
         np.save(os.path.join(args.output_saving_path, f'PCP_quant_score.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'HD-PCP':
-        keep_rates = [1, 0.95, 0.9, 0.85]
+        keep_rates = [1, 0.95, 0.6, 0.5, 0.3]
 
         for keep_rate in keep_rates:
             ens_size_keep = int(ens_size * keep_rate)
@@ -191,7 +192,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-    if args.model_type in ['flow-matching', 'diffusion', 'diffusion_sparse']:
+    if args.model_type in ['flow-matching-HD', 'diffusion', 'diffusion_sparse']:
         model_params = {
             'n_epochs': args.n_epochs,
             'batch_size': args.batch_size,

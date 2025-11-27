@@ -313,6 +313,83 @@ def real_ens_job():
             job.launch()
 
 
+def real_data_HD_job():
+
+    model_type = 'flow-matching-HD'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    configs = {
+            'meps_19': 1000,
+            'meps_20': 500,
+            'meps_21': 500,
+            'facebook_1': 5000,
+            'facebook_2': 2000,
+            'bio': 1000,
+            'blog_data': 10000,
+            'temperature': 1000,
+            'bike': 2000,
+            'taxi': 50000,
+            'energy': 20000,
+        }
+
+
+    for dataset, epoch in configs.items():
+        for n_ens in [30]:
+
+            job = SlurmJob(
+                    model_type=model_type,
+                    experiment_root=experiment_root,
+                    python_file=python_file,
+                    data_path=data_path,
+                    model_path=model_path,
+                    dataset=dataset,
+                    n_epochs=epoch,
+                    CP_type='HD-PCP',
+                    batch_size=256,
+                    n_ens=n_ens)
+
+            job.launch()
+
+
+def synthetic_data_HD_job():
+
+    model_type = 'flow-matching-HD'
+    experiment_root = f'/home/qy707/scratch/CP4Gen_Exp/{model_type}'
+    python_file = '/home/qy707/CP4GenerativeModel/main.py'
+    data_path = '/home/qy707/CP4GenerativeModel/data/'
+    model_path = '/home/qy707/scratch/CP4Gen_Exp/models/'
+
+    configs = {
+            '25-Gaussians':50000,
+            '8-Gaussians':50000,
+            'moon':5000,
+            'circle':20000,
+            'spiral':2000,
+            's_curve':20000,
+            }
+
+    for dataset, epoch in configs.items():
+        for n_ens in [30]:
+
+            job = SlurmJob(
+                    model_type=model_type,
+                    experiment_root=experiment_root,
+                    python_file=python_file,
+                    data_path=data_path,
+                    model_path=model_path,
+                    dataset=dataset,
+                    n_epochs=epoch,
+                    CP_type='HD-PCP',
+                    n_ens=n_ens)
+
+            job.launch()
+
+
+
 if __name__ == '__main__':
 
-    real_ens_job()
+    real_data_HD_job()
+    synthetic_data_HD_job()

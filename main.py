@@ -37,20 +37,25 @@ def run(args):
 
         if os.path.exists(os.path.join(args.model_path, f'model.pth')):
             Y_ens_calib = np.load(os.path.join(args.model_path, f'Y_ens_calib.npy'))
+            calib_scores = np.load(os.path.join(args.model_path, f'calib_scores.npy'))
             Y_calib = np.load(os.path.join(args.model_path, f'Y_calib.npy'))
             Y_ens_test = np.load(os.path.join(args.model_path, f'Y_ens_test.npy'))
-            Y_test = np.load(os.path.join(args.model_path, f'Y_test.npy'))        
+            test_scores = np.load(os.path.join(args.model_path, f'test_scores.npy'))
+            Y_test = np.load(os.path.join(args.model_path, f'Y_test.npy'))
+
         else:
             generative_model = GenerativeModel(args)
             generative_model.prep_data()
             generative_model.train()
-            Y_ens_calib, calib_conditions, Y_ens_test, test_conditions = generative_model.sample()
+            Y_ens_calib, calib_scores, calib_conditions, Y_ens_test, test_scores, test_conditions = generative_model.sample()
             Y_calib, Y_test = generative_model.get_ground_truth()
             generative_model.save()
 
             np.save(os.path.join(args.model_path, f'Y_ens_calib.npy'), Y_ens_calib)
+            np.save(os.path.join(args.model_path, f'calib_scores.npy'), calib_scores)
             np.save(os.path.join(args.model_path, f'Y_calib.npy'), Y_calib)
             np.save(os.path.join(args.model_path, f'Y_ens_test.npy'), Y_ens_test)
+            np.save(os.path.join(args.model_path, f'test_scores.npy'), test_scores)
             np.save(os.path.join(args.model_path, f'Y_test.npy'), Y_test)
             np.save(os.path.join(args.model_path, f'calib_conditions.npy'), calib_conditions)
             np.save(os.path.join(args.model_path, f'test_conditions.npy'), test_conditions)
@@ -62,10 +67,14 @@ def run(args):
     ens_size = min(args.n_ens, Y_ens_calib.shape[1])
     Y_ens_calib = Y_ens_calib[:, :ens_size]
     Y_ens_test = Y_ens_test[:, :ens_size]
+    calib_scores = calib_scores[:, :ens_size]
+    test_scores = test_scores[:, :ens_size]
 
     print(f'Y_ens_calib shape: {Y_ens_calib.shape}', flush=True)
+    print(f'calib_scores shape: {calib_scores.shape}', flush=True)
     print(f'Y_calib shape: {Y_calib.shape}', flush=True)
     print(f'Y_ens_test shape: {Y_ens_test.shape}', flush=True)
+    print(f'test_scores shape: {test_scores.shape}', flush=True)
     print(f'Y_test shape: {Y_test.shape}', flush=True)
 
     print(' ', flush=True)
@@ -86,6 +95,34 @@ def run(args):
         np.save(os.path.join(args.output_saving_path, f'PCP_volumes.npy'), volumes)
         np.save(os.path.join(args.output_saving_path, f'PCP_ks.npy'), ks)
         np.save(os.path.join(args.output_saving_path, f'PCP_quant_score.npy'), np.array([cp_method.quant_score]))
+
+    if args.CP_type == 'HD-PCP':
+        keep_rates = [1, 0.95, 0.9, 0.85]
+
+        for keep_rate in keep_rates:
+            ens_size_keep = int(ens_size * keep_rate)
+            cp_method = CPGen(args, k=ens_size_keep)
+
+            # Select sample with top scores
+            topk_idx_calib = np.argsort(calib_scores.squeeze(-1), axis=1)[:, -ens_size_keep:]
+            topk_idx_test = np.argsort(test_scores.squeeze(-1), axis=1)[:, -ens_size_keep:]
+
+            N_calib = Y_ens_calib.shape[0]
+            N_test = Y_ens_test.shape[0]
+
+            cp_method.fit(Y_ens_calib[np.arange(N_calib)[:, None], topk_idx_calib, :], Y_calib)
+            scores, volumes, ks = cp_method.predict(Y_ens_test[np.arange(N_test)[:, None], topk_idx_test, :], Y_test)
+
+            print(f'Keep Ensemble Size: {ens_size_keep}', flush=True)
+            print(f'Test Coverage Rate: {np.mean(scores < cp_method.quant_score):.6f}', flush=True)
+            print(f'Average k: {np.mean(ks):.6f}', flush=True)
+            print(f'Average Volume: {np.mean(volumes):.6f}', flush=True)
+            print(' ', flush=True)
+
+            np.save(os.path.join(args.output_saving_path, f'HD-PCP_scores_{keep_rate}.npy'), scores)
+            np.save(os.path.join(args.output_saving_path, f'HD-PCP_volumes_{keep_rate}.npy'), volumes)
+            np.save(os.path.join(args.output_saving_path, f'HD-PCP_ks_{keep_rate}.npy'), ks)
+            np.save(os.path.join(args.output_saving_path, f'HD-PCP_quant_score_{keep_rate}.npy'), np.array([cp_method.quant_score]))
 
     if args.CP_type == 'CP4Gen':
         d = Y_ens_calib.shape[-1]

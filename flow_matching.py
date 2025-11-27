@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import numpy as np
+from scipy.stats import multivariate_normal
+
 
 class GaussianPath:
     def __init__(self, alpha_fn, beta_fn):
@@ -100,7 +102,10 @@ def train_flow_matching(model, gaussian_path, dataloader, optimizer, num_epochs,
 
 def generate_data(model, gaussian_path, condition, timesteps, device):
     # Start from Gaussian noise
-    x = torch.randn(condition.size(0), model.fc5.out_features).to(device)
+    input_dim = model.fc5.out_features
+    x = torch.randn(condition.size(0), input_dim).to(device)
+    scores = multivariate_normal.logpdf(x.cpu(), mean=np.zeros(input_dim), cov=np.eye(input_dim)).reshape(-1, 1)
+    # (n_samples, 1)
     t_space = torch.linspace(0, 1, timesteps, device=device)
 
     for t in t_space:
@@ -109,12 +114,13 @@ def generate_data(model, gaussian_path, condition, timesteps, device):
             u_t = model(x, condition, t * torch.ones(condition.size(0), 1).to(device))
             x = x + u_t * dt  # Euler step
 
-    return x
+    return x, scores
 
 
 def generate_samples_for_dataset(model, gaussian_path, data_loader, num_samples, timesteps, device):
     model.eval()  # Set the model to evaluation mode
     all_generated_samples = []  # To store all generated samples
+    all_generated_scores = [] # To store all generated scores
     conditions = []  # To store corresponding conditions
 
     for condition_batch in data_loader:
@@ -123,11 +129,13 @@ def generate_samples_for_dataset(model, gaussian_path, data_loader, num_samples,
         # Generate num_samples_per_condition for each condition in the batch
         for condition in X:
             condition = condition.unsqueeze(0).repeat(num_samples, 1)  # Repeat condition
-            generated_samples = generate_data(model, gaussian_path, condition, timesteps, device)
+            generated_samples, scores = generate_data(model, gaussian_path, condition, timesteps, device)
             all_generated_samples.append(generated_samples.cpu().numpy())
             conditions.append(condition.cpu().numpy())
+            all_generated_scores.append(scores)
 
     # Convert lists to arrays for easier handling
     all_generated_samples = np.array(all_generated_samples)
+    all_generated_scores = np.array(all_generated_scores)
     conditions = np.array(conditions)
-    return all_generated_samples, conditions
+    return all_generated_samples, all_generated_scores, conditions

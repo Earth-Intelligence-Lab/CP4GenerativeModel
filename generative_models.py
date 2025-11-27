@@ -65,8 +65,8 @@ class GenerativeModel:
 
     def sample(self):
         if self.model_type == 'flow-matching':
-            calib_samples, calib_conditions = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.calib_loader, self.args.n_samples, self.args.timesteps, self.args.device)
-            test_samples, test_conditions = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.test_loader, self.args.n_samples, self.args.timesteps, self.args.device)
+            calib_samples, calib_scores, calib_conditions  = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.calib_loader, self.args.n_samples, self.args.timesteps, self.args.device)
+            test_samples, test_scores, test_conditions = flow_matching.generate_samples_for_dataset(self.model, self.gaussian_path, self.test_loader, self.args.n_samples, self.args.timesteps, self.args.device)
 
         # Denormalize the samples and conditions
         calib_samples = self.y_scaler.inverse_transform(calib_samples.reshape(-1, calib_samples.shape[-1])).reshape(calib_samples.shape)
@@ -75,7 +75,7 @@ class GenerativeModel:
         test_conditions = self.x_scaler.inverse_transform(test_conditions.reshape(-1, test_conditions.shape[-1])).reshape(test_conditions.shape)
         # (n_batch, n_samples, dim_y); (n_batch, n_sample, dim_x)        
 
-        return calib_samples, calib_conditions, test_samples, test_conditions
+        return calib_samples, calib_scores, calib_conditions, test_samples, test_scores, test_conditions
     
     def get_ground_truth(self):
         N = self.X.shape[0]
